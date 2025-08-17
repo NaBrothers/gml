@@ -117,6 +117,11 @@ export const authApi = {
     apiClient.setToken(token);
   },
 
+  // 清除token
+  clearToken: () => {
+    apiClient.clearToken();
+  },
+
   // 验证token并获取用户信息
   verify: (): Promise<AuthResponse> => {
     console.log('🌐 API: 开始调用verify接口');

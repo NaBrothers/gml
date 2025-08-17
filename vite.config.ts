@@ -24,6 +24,10 @@ export default defineConfig({
     }), 
     tsconfigPaths(),
   ],
+  preview: {
+    port: 3000,
+    host: true, // 可选：允许外部访问
+  },
   server: {
     proxy: {
       '/api': {

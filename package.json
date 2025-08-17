@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "check": "tsc --noEmit",
     "server:dev": "nodemon",
+    "server:prod": "cross-env NODE_ENV=production nodemon",
     "dev": "concurrently \"npm run client:dev\" \"npm run server:dev\"",
     "prod": "cross-env NODE_ENV=production concurrently \"npm run client:dev\" \"npm run server:dev\""
   },

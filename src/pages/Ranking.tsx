@@ -5,13 +5,10 @@ import { rankingApi } from '../lib/api';
 import { Trophy, Medal, Crown, TrendingUp, Users, BarChart3, ArrowLeft } from 'lucide-react';
 
 interface Stats {
-  majorRankStats: { [key: string]: number };
-  detailedRankStats: { [key: string]: number };
+  rankStats: { [key: string]: number };
   totalUsers: number;
   totalGames: number;
   averagePoints: number;
-  majorRanks: string[];
-  rankStats: { [key: string]: number };
 }
 
 const Ranking: React.FC = () => {
@@ -31,18 +28,16 @@ const Ranking: React.FC = () => {
     try {
       const response = await rankingApi.getStats();
       if (response.success && response.data) {
-        // 适配API返回的数据结构
+        // 使用API返回的数据结构
         const adaptedStats: Stats = {
-          majorRankStats: response.data.majorRankStats || {},
-          detailedRankStats: response.data.detailedRankStats || {},
+          rankStats: response.data.rankStats || {},
           totalUsers: response.data.totalUsers,
           totalGames: response.data.totalGames,
-          averagePoints: response.data.averagePoints,
-          majorRanks: response.data.majorRanks || [],
-          rankStats: response.data.majorRankStats || {}
+          averagePoints: response.data.averagePoints
         };
         setStats(adaptedStats);
-        setMajorRanks(response.data.majorRanks || []);
+        // 从rankStats中提取段位信息
+        setMajorRanks(Object.keys(response.data.rankStats || {}));
       }
     } catch (error) {
       console.error('获取统计数据失败:', error);
@@ -164,7 +159,7 @@ const Ranking: React.FC = () => {
                       {(() => {
                         // 按段位等级排序，找到最高段位
                         const rankOrder = ['雀之气', '雀者', '雀师', '大雀师', '雀灵', '雀王', '雀皇', '雀宗', '雀尊', '雀圣', '雀帝'];
-                        const ranks = Object.keys(stats.detailedRankStats);
+                        const ranks = Object.keys(stats.rankStats);
                         if (ranks.length === 0) return '暂无';
                         
                         // 按段位等级和小段位排序
@@ -218,7 +213,7 @@ const Ranking: React.FC = () => {
                 <div>
                   <span className="text-sm text-gray-600">段位筛选</span>
                   <div className="font-medium text-gray-800">
-                    {selectedMajorRank === 'all' ? `全部段位 (${rankings.length})` : `${selectedMajorRank} (${stats?.majorRankStats[selectedMajorRank] || 0})`}
+                    {selectedMajorRank === 'all' ? `全部段位 (${rankings.length})` : `${selectedMajorRank} (${stats?.rankStats[selectedMajorRank] || 0})`}
                   </div>
                 </div>
                 <div className={`transform transition-transform duration-200 ${
@@ -244,7 +239,7 @@ const Ranking: React.FC = () => {
                     全部段位 ({rankings.length})
                   </button>
                   {majorRanks.map((majorRank) => {
-                    const count = stats?.majorRankStats[majorRank] || 0;
+                    const count = stats?.rankStats[majorRank] || 0;
                     return (
                       <button
                         key={majorRank}
@@ -284,7 +279,7 @@ const Ranking: React.FC = () => {
                     全部段位 ({rankings.length})
                   </button>
                   {majorRanks.map((majorRank) => {
-                    const count = stats?.majorRankStats[majorRank] || 0;
+                    const count = stats?.rankStats[majorRank] || 0;
                     return (
                       <button
                         key={majorRank}
@@ -306,7 +301,7 @@ const Ranking: React.FC = () => {
                   <div className="mt-6">
                     <h4 className="text-md font-semibold text-gray-800 mb-3">段位分布</h4>
                     <div className="space-y-2">
-                      {Object.entries(stats.majorRankStats)
+                      {Object.entries(stats.rankStats)
                         .sort(([a], [b]) => {
                           // 按段位顺序排序
                           const order = ['雀之气', '雀者', '雀师', '大雀师', '雀灵', '雀王', '雀皇', '雀宗', '雀尊', '雀圣', '雀帝'];
