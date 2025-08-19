@@ -5,6 +5,35 @@ import { userApi } from '../lib/api';
 import PointsChart from '../components/PointsChart';
 import PositionChart from '../components/PositionChart';
 
+// 段位配置数据（与后端保持一致）
+const rankConfigs = [
+  { id: 1, rankName: '雀之气一段', rankOrder: 1 },
+  { id: 2, rankName: '雀之气二段', rankOrder: 2 },
+  { id: 3, rankName: '雀之气三段', rankOrder: 3 },
+  { id: 4, rankName: '雀之气四段', rankOrder: 4 },
+  { id: 5, rankName: '雀之气五段', rankOrder: 5 },
+  { id: 6, rankName: '雀之气六段', rankOrder: 6 },
+  { id: 7, rankName: '雀之气七段', rankOrder: 7 },
+  { id: 8, rankName: '雀之气八段', rankOrder: 8 },
+  { id: 9, rankName: '雀之气九段', rankOrder: 9 },
+  { id: 10, rankName: '一星雀者', rankOrder: 10 },
+  { id: 11, rankName: '二星雀者', rankOrder: 11 },
+  { id: 12, rankName: '三星雀者', rankOrder: 12 },
+  { id: 13, rankName: '四星雀者', rankOrder: 13 },
+  { id: 14, rankName: '五星雀者', rankOrder: 14 },
+  { id: 15, rankName: '六星雀者', rankOrder: 15 },
+  { id: 16, rankName: '七星雀者', rankOrder: 16 },
+  { id: 17, rankName: '八星雀者', rankOrder: 17 },
+  { id: 18, rankName: '九星雀者', rankOrder: 18 },
+];
+
+// 根据rankLevel获取段位名称
+const getRankNameByLevel = (rankLevel: number | string): string => {
+  const level = typeof rankLevel === 'string' ? parseInt(rankLevel, 10) : rankLevel;
+  const rankConfig = rankConfigs.find(config => config.rankOrder === level);
+  return rankConfig ? rankConfig.rankName : '雀之气一段';
+};
+
 interface UserHistory {
   user: {
     id: string;
@@ -237,7 +266,7 @@ const Profile: React.FC = () => {
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div className="flex flex-col items-center">
                       <Trophy className="w-4 h-4 mb-1 text-yellow-500" />
-                      <span className="text-gray-600">{user.rankLevel}</span>
+                      <span className="text-gray-600">{getRankNameByLevel(user.rankLevel)}</span>
                     </div>
                     <div className="flex flex-col items-center">
                       <Target className="w-4 h-4 mb-1 text-blue-500" />
@@ -265,7 +294,7 @@ const Profile: React.FC = () => {
                   <div className="flex items-center space-x-4 text-gray-600">
                     <span className="flex items-center">
                       <Trophy className="w-4 h-4 mr-1" />
-                      {user.rankLevel}
+                      {getRankNameByLevel(user.rankLevel)}
                     </span>
                     <span className="flex items-center">
                       <Target className="w-4 h-4 mr-1" />

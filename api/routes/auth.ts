@@ -52,7 +52,7 @@ router.post('/register', async (req: Request, res: Response) => {
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
     // 创建用户
-    const initialPoints = 1500;
+    const initialPoints = 1800;
     const rankInfo = parseRankInfo(initialPoints);
     const user = await userDb.create({
       username,

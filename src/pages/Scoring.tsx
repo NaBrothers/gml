@@ -5,6 +5,35 @@ import { useUserStore } from '../stores/userStore';
 import { useGameStore, validateScores, getScoreDifference } from '../stores/gameStore';
 import { User } from '../../shared/types';
 import { Calculator, Users, Trophy, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
+
+// 段位配置数据（与后端保持一致）
+const rankConfigs = [
+  { id: 1, rankName: '雀之气一段', rankOrder: 1 },
+  { id: 2, rankName: '雀之气二段', rankOrder: 2 },
+  { id: 3, rankName: '雀之气三段', rankOrder: 3 },
+  { id: 4, rankName: '雀之气四段', rankOrder: 4 },
+  { id: 5, rankName: '雀之气五段', rankOrder: 5 },
+  { id: 6, rankName: '雀之气六段', rankOrder: 6 },
+  { id: 7, rankName: '雀之气七段', rankOrder: 7 },
+  { id: 8, rankName: '雀之气八段', rankOrder: 8 },
+  { id: 9, rankName: '雀之气九段', rankOrder: 9 },
+  { id: 10, rankName: '一星雀者', rankOrder: 10 },
+  { id: 11, rankName: '二星雀者', rankOrder: 11 },
+  { id: 12, rankName: '三星雀者', rankOrder: 12 },
+  { id: 13, rankName: '四星雀者', rankOrder: 13 },
+  { id: 14, rankName: '五星雀者', rankOrder: 14 },
+  { id: 15, rankName: '六星雀者', rankOrder: 15 },
+  { id: 16, rankName: '七星雀者', rankOrder: 16 },
+  { id: 17, rankName: '八星雀者', rankOrder: 17 },
+  { id: 18, rankName: '九星雀者', rankOrder: 18 },
+];
+
+// 根据rankLevel获取段位名称
+const getRankNameByLevel = (rankLevel: number): string => {
+  const rankConfig = rankConfigs.find(config => config.rankOrder === rankLevel);
+  return rankConfig ? rankConfig.rankName : '雀之气一段';
+};
 
 const Scoring: React.FC = () => {
   const navigate = useNavigate();
@@ -229,7 +258,7 @@ const Scoring: React.FC = () => {
                     >
                       <div className="font-medium">{user.nickname}</div>
                       <div className="text-sm text-gray-500">
-                        {user.rankLevel} · {user.totalPoints}分
+                        {getRankNameByLevel(user.rankLevel)} · {user.totalPoints}分
                       </div>
                     </button>
                   );
