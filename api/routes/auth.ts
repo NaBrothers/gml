@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { userDb, getRankByPoints } from '../utils/database.js';
-import { ApiResponse, UserRegistration, UserLogin, AuthResponse } from '../../shared/types.js';
+import { userDb, getRankByPoints, parseRankInfo } from '../utils/database.js';
+import { ApiResponse, UserRegistration, UserLogin, AuthResponse, UserRole } from '../../shared/types.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'mahjong-secret-key';
@@ -53,13 +53,15 @@ router.post('/register', async (req: Request, res: Response) => {
 
     // 创建用户
     const initialPoints = 1500;
+    const rankInfo = parseRankInfo(initialPoints);
     const user = await userDb.create({
       username,
       passwordHash,
       nickname: nickname || username,
       avatar: '',
+      role: UserRole.USER,
       totalPoints: initialPoints,
-      rankLevel: getRankByPoints(initialPoints),
+      rankLevel: rankInfo.rankConfig.rankOrder,
       rankPoints: 0,
       gamesPlayed: 0
     });

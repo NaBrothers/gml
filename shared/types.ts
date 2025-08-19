@@ -1,14 +1,22 @@
 // 共享类型定义
 
-// 用户相关类型
+// 用户角色枚举
+export enum UserRole {
+  USER = 'user',
+  ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin'
+}
+
+// 用户接口
 export interface User {
   id: string;
   username: string;
-  passwordHash?: string;
+  passwordHash: string;
   nickname: string;
-  avatar: string;
+  avatar?: string;
+  role: UserRole;
   totalPoints: number;
-  rankLevel: string;
+  rankLevel: number;
   rankPoints: number;
   gamesPlayed: number;
   createdAt: string;
@@ -108,7 +116,7 @@ export interface RankingUser {
   nickname: string;
   avatar: string;
   totalPoints: number;
-  rankLevel: string;
+  rankLevel: number;
   gamesPlayed: number;
   rank: number;
 }

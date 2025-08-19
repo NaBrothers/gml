@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { userDb, gamePlayerDb, pointHistoryDb, gameDb } from '../utils/database.js';
-import { ApiResponse, User, PointHistory, GamePlayer, Game } from '../../shared/types.js';
+import { ApiResponse, User, PointHistory, GamePlayer, Game, UserRole } from '../../shared/types.js';
 
 const router = express.Router();
 
@@ -251,6 +251,136 @@ router.get('/:id/history', async (req: Request, res: Response) => {
     const response: ApiResponse = {
       success: false,
       error: '获取用户历史记录失败'
+    };
+    res.status(500).json(response);
+  }
+});
+
+// 更新用户权限（仅超级管理员可用）
+router.put('/:id/role', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { role, operatorId } = req.body;
+
+    // 验证操作者权限
+    const operator = await userDb.findById(operatorId);
+    if (!operator || operator.role !== UserRole.SUPER_ADMIN) {
+      const response: ApiResponse = {
+        success: false,
+        error: '权限不足，只有超级管理员可以修改用户权限'
+      };
+      return res.status(403).json(response);
+    }
+
+    // 验证目标用户是否存在
+    const targetUser = await userDb.findById(id);
+    if (!targetUser) {
+      const response: ApiResponse = {
+        success: false,
+        error: '目标用户不存在'
+      };
+      return res.status(404).json(response);
+    }
+
+    // 验证权限级别是否有效
+    if (!Object.values(UserRole).includes(role)) {
+      const response: ApiResponse = {
+        success: false,
+        error: '无效的权限级别'
+      };
+      return res.status(400).json(response);
+    }
+
+    // 防止超级管理员降级自己
+    if (id === operatorId && role !== UserRole.SUPER_ADMIN) {
+      const response: ApiResponse = {
+        success: false,
+        error: '不能降级自己的权限'
+      };
+      return res.status(400).json(response);
+    }
+
+    // 更新用户权限
+    const updatedUser = await userDb.update(id, { role });
+
+    const response: ApiResponse<User> = {
+      success: true,
+      data: updatedUser!,
+      message: '用户权限更新成功'
+    };
+    res.json(response);
+  } catch (error) {
+    console.error('更新用户权限失败:', error);
+    const response: ApiResponse = {
+      success: false,
+      error: '更新用户权限失败'
+    };
+    res.status(500).json(response);
+  }
+});
+
+// 获取用户权限信息
+router.get('/:id/permissions', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { requesterId } = req.query;
+
+    // 验证请求者权限
+    const requester = await userDb.findById(requesterId as string);
+    if (!requester) {
+      const response: ApiResponse = {
+        success: false,
+        error: '请求者不存在'
+      };
+      return res.status(404).json(response);
+    }
+
+    // 验证目标用户是否存在
+    const targetUser = await userDb.findById(id);
+    if (!targetUser) {
+      const response: ApiResponse = {
+        success: false,
+        error: '目标用户不存在'
+      };
+      return res.status(404).json(response);
+    }
+
+    // 权限检查：只有管理员及以上可以查看其他用户权限，普通用户只能查看自己的
+    if (id !== requesterId && requester.role === UserRole.USER) {
+      const response: ApiResponse = {
+        success: false,
+        error: '权限不足，无法查看其他用户权限信息'
+      };
+      return res.status(403).json(response);
+    }
+
+    const permissions = {
+      canViewUsers: requester.role !== UserRole.USER,
+      canEditOwnProfile: true,
+      canEditOtherProfiles: requester.role === UserRole.SUPER_ADMIN,
+      canManageRoles: requester.role === UserRole.SUPER_ADMIN,
+      canDeleteUsers: requester.role === UserRole.SUPER_ADMIN,
+      canViewAllData: requester.role !== UserRole.USER
+    };
+
+    const response: ApiResponse<{
+      user: User;
+      permissions: typeof permissions;
+      canEditThisUser: boolean;
+    }> = {
+      success: true,
+      data: {
+        user: targetUser,
+        permissions,
+        canEditThisUser: id === requesterId || requester.role === UserRole.SUPER_ADMIN
+      }
+    };
+    res.json(response);
+  } catch (error) {
+    console.error('获取用户权限信息失败:', error);
+    const response: ApiResponse = {
+      success: false,
+      error: '获取用户权限信息失败'
     };
     res.status(500).json(response);
   }

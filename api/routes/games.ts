@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { gameDb, gamePlayerDb, userDb, pointHistoryDb, calculateMahjongPoints, getRankByPoints } from '../utils/database.js';
+import { userDb, gameDb, gamePlayerDb, pointHistoryDb, calculateMahjongPoints, getRankByPoints, parseRankInfo } from '../utils/database.js';
 import { ApiResponse, GameResult, GameDetail, Game } from '../../shared/types.js';
 
 const router = express.Router();
@@ -55,16 +55,18 @@ router.post('/', async (req: Request, res: Response) => {
       
       // 记录积分变化前的状态
       const pointsBefore = user.totalPoints;
-      const rankBefore = user.rankLevel;
+      const rankBeforeInfo = parseRankInfo(pointsBefore);
+      const rankBefore = rankBeforeInfo.displayName;
       
       // 计算新积分和段位
       const pointsAfter = pointsBefore + calculation.rankPoints;
-      const rankAfter = getRankByPoints(pointsAfter);
+      const rankAfterInfo = parseRankInfo(pointsAfter);
+      const rankAfter = rankAfterInfo.displayName;
       
       // 更新用户积分和段位
       await userDb.update(playerId, {
         totalPoints: pointsAfter,
-        rankLevel: rankAfter,
+        rankLevel: rankAfterInfo.rankConfig.rankOrder,
         gamesPlayed: user.gamesPlayed + 1
       });
       

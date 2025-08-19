@@ -32,7 +32,7 @@ router.get('/', async (req: Request, res: Response) => {
           nickname: user.nickname,
           avatar: user.avatar,
           totalPoints: user.totalPoints,
-          rankLevel: rankInfo.displayName, // 使用新的段位显示格式
+          rankLevel: rankInfo.rankConfig.rankOrder, // 使用rankOrder作为数字类型
           gamesPlayed: user.gamesPlayed,
           rank: index + 1
         };

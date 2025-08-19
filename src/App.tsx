@@ -7,6 +7,7 @@ import Scoring from "@/pages/Scoring";
 import Ranking from "@/pages/Ranking";
 import Profile from "@/pages/Profile";
 import Settings from "@/pages/Settings";
+import UserManagement from "@/pages/UserManagement";
 
 export default function App() {
   const { initializeAuth } = useAuthStore();
@@ -29,7 +30,7 @@ export default function App() {
         <Route path="/ranking" element={<Ranking />} />
         <Route path="/scoring" element={<Scoring />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/users" element={<div className="text-center text-xl p-8">用户管理页面 - 开发中</div>} />
+        <Route path="/users" element={<UserManagement />} />
         <Route path="/profile/:userId" element={<Profile />} />
         <Route path="/game/:id" element={<div className="text-center text-xl p-8">对局详情页面 - 开发中</div>} />
       </Routes>

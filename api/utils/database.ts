@@ -1,5 +1,5 @@
 // 数据库操作工具函数（文件持久化存储）
-import { User, Game, GamePlayer, PointHistory, RankConfig, MahjongCalculation, RankInfo } from '../../shared/types.js';
+import { User, Game, GamePlayer, PointHistory, RankConfig, MahjongCalculation, RankInfo, UserRole } from '../../shared/types.js';
 import { UMA_POINTS, BASE_POINTS } from '../../shared/types.js';
 import { 
   userFileStorage, 
@@ -451,8 +451,9 @@ export async function initializeTestData() {
       passwordHash: adminPasswordHash,
       nickname: '系统管理员',
       avatar: '',
+      role: UserRole.SUPER_ADMIN,
       totalPoints: adminPoints,
-      rankLevel: adminRankInfo.displayName,
+      rankLevel: adminRankInfo.rankConfig.rankOrder,
       rankPoints: 0,
       gamesPlayed: 0,
       createdAt: new Date().toISOString(),
