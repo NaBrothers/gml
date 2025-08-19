@@ -1,12 +1,58 @@
-// 数据库操作工具函数（模拟数据库操作）
+// 数据库操作工具函数（文件持久化存储）
 import { User, Game, GamePlayer, PointHistory, RankConfig, MahjongCalculation, RankInfo } from '../../shared/types.js';
 import { UMA_POINTS, BASE_POINTS } from '../../shared/types.js';
+import { 
+  userFileStorage, 
+  gameFileStorage, 
+  gamePlayerFileStorage, 
+  pointHistoryFileStorage,
+  initializeDataFiles 
+} from './fileStorage.js';
 
-// 模拟数据存储
+// 内存缓存（提高性能）
 let users: User[] = [];
 let games: Game[] = [];
 let gamePlayers: GamePlayer[] = [];
 let pointHistory: PointHistory[] = [];
+
+// 数据是否已加载
+let dataLoaded = false;
+
+// 防止重复初始化的标志
+let isInitialized = false;
+
+// 加载所有数据到内存
+export async function loadAllData(): Promise<void> {
+  if (dataLoaded) return;
+  
+  try {
+    await initializeDataFiles();
+    users = await userFileStorage.load();
+    games = await gameFileStorage.load();
+    gamePlayers = await gamePlayerFileStorage.load();
+    pointHistory = await pointHistoryFileStorage.load();
+    dataLoaded = true;
+    console.log('数据已从文件加载到内存');
+  } catch (error) {
+    console.error('加载数据失败:', error);
+    throw error;
+  }
+}
+
+// 保存所有数据到文件
+export async function saveAllData(): Promise<void> {
+  try {
+    await Promise.all([
+      userFileStorage.save(users),
+      gameFileStorage.save(games),
+      gamePlayerFileStorage.save(gamePlayers),
+      pointHistoryFileStorage.save(pointHistory)
+    ]);
+  } catch (error) {
+    console.error('保存数据失败:', error);
+    throw error;
+  }
+}
 
 // 段位配置数据（斗破苍穹风格 - 大段位+小段位结构）
 const rankConfigs: RankConfig[] = [
@@ -170,6 +216,7 @@ export function calculateMahjongPoints(scores: number[]): MahjongCalculation[] {
 // 用户数据库操作
 export const userDb = {
   async create(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
+    await loadAllData();
     const user: User = {
       id: generateId(),
       ...userData,
@@ -177,22 +224,27 @@ export const userDb = {
       updatedAt: new Date().toISOString()
     };
     users.push(user);
+    await userFileStorage.save(users);
     return user;
   },
 
   async findByUsername(username: string): Promise<User | null> {
+    await loadAllData();
     return users.find(user => user.username === username) || null;
   },
 
   async findById(id: string): Promise<User | null> {
+    await loadAllData();
     return users.find(user => user.id === id) || null;
   },
 
   async findAll(): Promise<User[]> {
+    await loadAllData();
     return [...users];
   },
 
   async update(id: string, updates: Partial<User>): Promise<User | null> {
+    await loadAllData();
     const userIndex = users.findIndex(user => user.id === id);
     if (userIndex === -1) return null;
     
@@ -201,14 +253,17 @@ export const userDb = {
       ...updates,
       updatedAt: new Date().toISOString()
     };
+    await userFileStorage.save(users);
     return users[userIndex];
   },
 
   async delete(id: string): Promise<boolean> {
+    await loadAllData();
     const userIndex = users.findIndex(user => user.id === id);
     if (userIndex === -1) return false;
     
     users.splice(userIndex, 1);
+    await userFileStorage.save(users);
     return true;
   }
 };
@@ -216,20 +271,24 @@ export const userDb = {
 // 对局数据库操作
 export const gameDb = {
   async create(gameData: Omit<Game, 'id' | 'createdAt'>): Promise<Game> {
+    await loadAllData();
     const game: Game = {
       id: generateId(),
       ...gameData,
       createdAt: new Date().toISOString()
     };
     games.push(game);
+    await gameFileStorage.save(games);
     return game;
   },
 
   async findById(id: string): Promise<Game | null> {
+    await loadAllData();
     return games.find(game => game.id === id) || null;
   },
 
   async findAll(): Promise<Game[]> {
+    await loadAllData();
     return [...games].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 };
@@ -237,19 +296,23 @@ export const gameDb = {
 // 对局玩家数据库操作
 export const gamePlayerDb = {
   async create(playerData: Omit<GamePlayer, 'id'>): Promise<GamePlayer> {
+    await loadAllData();
     const gamePlayer: GamePlayer = {
       id: generateId(),
       ...playerData
     };
     gamePlayers.push(gamePlayer);
+    await gamePlayerFileStorage.save(gamePlayers);
     return gamePlayer;
   },
 
   async findByGameId(gameId: string): Promise<GamePlayer[]> {
+    await loadAllData();
     return gamePlayers.filter(player => player.gameId === gameId);
   },
 
   async findByUserId(userId: string): Promise<GamePlayer[]> {
+    await loadAllData();
     return gamePlayers.filter(player => player.userId === userId);
   }
 };
@@ -257,22 +320,26 @@ export const gamePlayerDb = {
 // 积分历史数据库操作
 export const pointHistoryDb = {
   async create(historyData: Omit<PointHistory, 'id' | 'createdAt'>): Promise<PointHistory> {
+    await loadAllData();
     const history: PointHistory = {
       id: generateId(),
       ...historyData,
       createdAt: new Date().toISOString()
     };
     pointHistory.push(history);
+    await pointHistoryFileStorage.save(pointHistory);
     return history;
   },
 
   async findByUserId(userId: string): Promise<PointHistory[]> {
+    await loadAllData();
     return pointHistory
       .filter(history => history.userId === userId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   },
 
   async findByGameId(gameId: string): Promise<PointHistory[]> {
+    await loadAllData();
     return pointHistory.filter(history => history.gameId === gameId);
   }
 };
@@ -356,6 +423,11 @@ export const getAllRanks = (): RankConfig[] => {
 
 // 初始化一些测试数据
 export async function initializeTestData() {
+  if (isInitialized) {
+    console.log('⚠️ 测试数据已初始化，跳过重复初始化');
+    return;
+  }
+  
   // 只在开发环境创建测试账号
   const isProduction = process.env.NODE_ENV === 'production';
   if (isProduction) {
@@ -363,14 +435,18 @@ export async function initializeTestData() {
     return;
   }
   
+  await loadAllData();
   if (users.length === 0) {
     const bcrypt = await import('bcryptjs');
     
-    // 创建测试用户（使用新的段位系统）
+    // 只创建admin账户，初始积分为0
     const adminPasswordHash = await bcrypt.hash('admin123', 10);
-    const adminPoints = 3800; // 三星雀灵
+    const adminPoints = 0; // 初始积分为0
     const adminRankInfo = parseRankInfo(adminPoints);
-    await userDb.create({
+    
+    // 直接操作内存数组，避免重复调用loadAllData
+    const adminUser: User = {
+      id: generateId(),
       username: 'admin',
       passwordHash: adminPasswordHash,
       nickname: '系统管理员',
@@ -378,55 +454,21 @@ export async function initializeTestData() {
       totalPoints: adminPoints,
       rankLevel: adminRankInfo.displayName,
       rankPoints: 0,
-      gamesPlayed: 0
-    });
-
-    const player1PasswordHash = await bcrypt.hash('player123', 10);
-    const player1Points = 3600; // 一星雀灵
-    const player1RankInfo = parseRankInfo(player1Points);
-    await userDb.create({
-      username: 'player1',
-      passwordHash: player1PasswordHash,
-      nickname: '麻将高手',
-      avatar: '',
-      totalPoints: player1Points,
-      rankLevel: player1RankInfo.displayName,
-      rankPoints: 0,
-      gamesPlayed: 0
-    });
-
-    const player2PasswordHash = await bcrypt.hash('player123', 10);
-    const player2Points = 1900; // 二星雀师
-    const player2RankInfo = parseRankInfo(player2Points);
-    await userDb.create({
-      username: 'player2',
-      passwordHash: player2PasswordHash,
-      nickname: '新手玩家',
-      avatar: '',
-      totalPoints: player2Points,
-      rankLevel: player2RankInfo.displayName,
-      rankPoints: 0,
-      gamesPlayed: 0
-    });
-
-    const player3PasswordHash = await bcrypt.hash('player123', 10);
-    const player3Points = 250; // 雀之气三段
-    const player3RankInfo = parseRankInfo(player3Points);
-    await userDb.create({
-      username: 'player3',
-      passwordHash: player3PasswordHash,
-      nickname: '中级玩家',
-      avatar: '',
-      totalPoints: player3Points,
-      rankLevel: player3RankInfo.displayName,
-      rankPoints: 0,
-      gamesPlayed: 0
-    });
-
-    console.log('测试用户已创建（新段位系统）:');
+      gamesPlayed: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    users.push(adminUser);
+    
+    // 保存到文件
+    await userFileStorage.save(users);
+    
+    console.log('管理员账户已创建:');
     console.log(`- admin / admin123 - ${adminRankInfo.displayName}`);
-    console.log(`- player1 / player123 - ${player1RankInfo.displayName}`);
-    console.log(`- player2 / player123 - ${player2RankInfo.displayName}`);
-    console.log(`- player3 / player123 - ${player3RankInfo.displayName}`);
   }
+  
+  isInitialized = true;
+  console.log('✅ 测试数据初始化完成');
+  console.log('📋 可用账号:');
+  console.log('   - admin / admin123 (管理员)');
 }

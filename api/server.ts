@@ -18,16 +18,6 @@ const server = app.listen(PORT, async () => {
   
   try {
     await initializeTestData();
-    if (!isProduction) {
-      console.log('✅ 测试数据初始化完成');
-      console.log('📋 可用测试账号:');
-      console.log('   - admin / admin123 (管理员)');
-      console.log('   - player1 / player123 (测试玩家)');
-      console.log('   - player2 / player123 (测试玩家)');
-      console.log('   - player3 / player123 (测试玩家)');
-    } else {
-      console.log('✅ 生产环境数据库初始化完成');
-    }
   } catch (error) {
     console.error('❌ 数据库初始化失败:', error);
   }

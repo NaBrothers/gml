@@ -1,11 +1,8 @@
 import express, { Request, Response } from 'express';
-import { userDb, gamePlayerDb, pointHistoryDb, gameDb, initializeTestData } from '../utils/database.js';
+import { userDb, gamePlayerDb, pointHistoryDb, gameDb } from '../utils/database.js';
 import { ApiResponse, User, PointHistory, GamePlayer, Game } from '../../shared/types.js';
 
 const router = express.Router();
-
-// 初始化测试数据
-initializeTestData();
 
 // 获取所有用户
 router.get('/', async (req: Request, res: Response) => {
