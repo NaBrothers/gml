@@ -272,6 +272,42 @@ const Home: React.FC = () => {
                   </span>
                 </div>
                 <span className="text-white text-lg font-medium">{user.nickname}</span>
+                
+                {/* 用户菜单选项 */}
+                <div className="mt-6 space-y-3 w-full max-w-xs mx-auto">
+                  <button
+                    onClick={() => {
+                      handleProfileClick();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center space-x-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300"
+                  >
+                    <User className="w-5 h-5" />
+                    <span className="text-base font-medium">比赛记录</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      handleSettingsClick();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center space-x-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300"
+                  >
+                    <Settings className="w-5 h-5" />
+                    <span className="text-base font-medium">设置</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      handleLogoutClick();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center space-x-3 p-3 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-white transition-all duration-300"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span className="text-base font-medium">登出</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
