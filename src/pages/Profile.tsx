@@ -4,6 +4,7 @@ import { User, Calendar, Trophy, TrendingUp, ArrowLeft, Clock, Users, Target } f
 import { userApi } from '../lib/api';
 import PointsChart from '../components/PointsChart';
 import PositionChart from '../components/PositionChart';
+import Avatar from '../components/Avatar';
 
 // 段位配置数据（与后端保持一致）
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
@@ -234,9 +235,12 @@ const Profile: React.FC = () => {
             {/* 移动端布局 */}
             <div className="block sm:hidden">
               <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-blue-400 rounded-full flex items-center justify-center text-white text-xl font-bold">
-                  {user.nickname.charAt(0)}
-                </div>
+                <Avatar
+                  src={user.avatar}
+                  alt={user.nickname}
+                  size="lg"
+                  className="w-16 h-16"
+                />
                 <div>
                   <h2 className="text-2xl font-bold text-gray-800 mb-3">{user.nickname}</h2>
                   <div className="grid grid-cols-3 gap-4 text-sm">
@@ -262,9 +266,12 @@ const Profile: React.FC = () => {
             {/* 桌面端布局 */}
             <div className="hidden sm:flex items-center justify-between">
               <div className="flex items-center space-x-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-pink-400 to-blue-400 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                  {user.nickname.charAt(0)}
-                </div>
+                <Avatar
+                  src={user.avatar}
+                  alt={user.nickname}
+                  size="xl"
+                  className="w-20 h-20"
+                />
                 <div>
                   <h2 className="text-3xl font-bold text-gray-800 mb-2">{user.nickname}</h2>
                   <div className="flex items-center space-x-4 text-gray-600">

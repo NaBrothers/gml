@@ -139,6 +139,6 @@ export interface MahjongCalculation {
 }
 
 // 马点配置
-export const UMA_POINTS = [15, 5, -5, -15]; // 1-4位的马点
+export const UMA_POINTS = [20, 10, 0, -10]; // 1-4位的马点
 export const BASE_POINTS = 25000; // 配点（精算原点）
 export const TOTAL_POINTS = 100000; // 四人总分

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/match-history" element={<MatchHistory />} />
         <Route path="/game/:id" element={<div className="text-center text-xl p-8">对局详情页面 - 开发中</div>} />
       </Routes>
+      <Toaster position="top-center" richColors />
     </Router>
   );
 }

@@ -287,12 +287,7 @@ const MatchHistory: React.FC = () => {
                                 {player.rankPointsChange > 0 ? '+' : ''}{player.rankPointsChange}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-gray-600">UMA:</span>
-                              <span className={`font-medium ${getPointsChangeColor(player.umaPoints)}`}>
-                                {player.umaPoints > 0 ? '+' : ''}{player.umaPoints}
-                              </span>
-                            </div>
+
                           </div>
                         </div>
                       ))}

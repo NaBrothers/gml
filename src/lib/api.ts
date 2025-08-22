@@ -81,6 +81,34 @@ class ApiClient {
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
+
+  // 文件上传请求
+  async uploadFile<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
+    const url = `${this.baseURL}${endpoint}`;
+    const headers: HeadersInit = {};
+
+    // 添加认证头
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers,
+        body: formData,
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('文件上传失败:', error);
+      return {
+        success: false,
+        error: '文件上传失败'
+      };
+    }
+  }
 }
 
 // 创建API客户端实例
@@ -164,6 +192,11 @@ export const usersApi = {
     if (params?.offset) query.append('offset', params.offset.toString());
     const queryString = query.toString();
     return apiClient.get(`/users/${id}/history${queryString ? '?' + queryString : ''}`);
+  },
+
+  // 更新用户资料（支持文件上传）
+  updateProfile: (formData: FormData): Promise<ApiResponse<User>> => {
+    return apiClient.uploadFile('/users/profile', formData);
   }
 };
 

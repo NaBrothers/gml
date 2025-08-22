@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { User, RankingUser } from '../../shared/types';
 import { usersApi, rankingApi } from '../lib/api';
+import { useAuthStore } from './authStore';
 
 interface UserState {
   users: User[];
@@ -15,6 +16,7 @@ interface UserState {
   fetchRankings: (limit?: number, majorRank?: string) => Promise<void>;
   fetchUserById: (id: string) => Promise<User | null>;
   updateUser: (id: string, data: { nickname?: string, avatar?: string }) => Promise<boolean>;
+  updateProfile: (nickname?: string, avatar?: File) => Promise<boolean>;
   deleteUser: (id: string) => Promise<boolean>;
   clearError: () => void;
 }
@@ -169,6 +171,57 @@ export const useUserStore = create<UserState>((set, get) => ({
         set({
           isLoading: false,
           error: response.error || '删除用户失败'
+        });
+        return false;
+      }
+    } catch (error) {
+      set({
+        isLoading: false,
+        error: '网络错误，请稍后重试'
+      });
+      return false;
+    }
+  },
+
+  updateProfile: async (nickname?: string, avatar?: File) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const formData = new FormData();
+      if (nickname !== undefined) {
+        formData.append('nickname', nickname);
+      }
+      if (avatar) {
+        formData.append('avatar', avatar);
+      }
+      
+      const response = await usersApi.updateProfile(formData);
+      
+      if (response.success && response.data) {
+        // 更新本地用户列表中的当前用户
+        const { users } = get();
+        const updatedUsers = users.map(user => 
+          user.id === response.data!.id ? response.data! : user
+        );
+        
+        set({
+          users: updatedUsers,
+          currentUser: response.data,
+          isLoading: false,
+          error: null
+        });
+        
+        // 同步更新authStore中的用户信息
+        const authStore = useAuthStore.getState();
+        if (authStore.user && authStore.user.id === response.data.id) {
+          authStore.updateUserInfo(response.data);
+        }
+        
+        return true;
+      } else {
+        set({
+          isLoading: false,
+          error: response.error || '更新个人资料失败'
         });
         return false;
       }

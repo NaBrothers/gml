@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useUserStore } from '../stores/userStore';
 import { Trophy, Users, GamepadIcon, TrendingUp, LogIn, UserPlus, Crown, Sword, Menu, X, Star, Zap, User, Settings, LogOut, ChevronDown, History } from 'lucide-react';
+import Avatar from '../components/Avatar';
 
 // 段位配置数据（与后端保持一致）
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
@@ -149,11 +150,12 @@ const Home: React.FC = () => {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="group flex flex-col items-center p-3 rounded-xl bg-gradient-to-br from-green-400/20 to-blue-400/20 hover:from-green-400/30 hover:to-blue-400/30 border border-green-400/30 hover:border-green-300/50 transition-all duration-300 transform hover:scale-105 w-full"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-                    <span className="text-white text-sm font-bold">
-                      {user.nickname.charAt(0)}
-                    </span>
-                  </div>
+                  <Avatar
+                    src={user.avatar}
+                    alt={user.nickname}
+                    size="md"
+                    className="shadow-lg group-hover:shadow-xl transition-shadow"
+                  />
                   <div className="flex items-center mt-1">
                     <span className="text-xs text-white/90 font-medium text-center truncate">{user.nickname}</span>
                     <ChevronDown className={`w-3 h-3 text-white/70 ml-1 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
@@ -342,11 +344,12 @@ const Home: React.FC = () => {
             {/* 用户信息显示 */}
             {isAuthenticated && user && (
               <div className="text-center">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg mx-auto mb-2">
-                  <span className="text-white text-lg font-bold">
-                    {user.nickname.charAt(0)}
-                  </span>
-                </div>
+                <Avatar
+                  src={user.avatar}
+                  alt={user.nickname}
+                  size="lg"
+                  className="shadow-lg mx-auto mb-2"
+                />
                 <span className="text-white text-base font-medium">{user.nickname}</span>
               </div>
             )}

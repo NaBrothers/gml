@@ -16,6 +16,7 @@ interface AuthState {
   logout: () => void;
   clearError: () => void;
   initializeAuth: () => void;
+  updateUserInfo: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -156,5 +157,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('⚠️ AuthStore: 没有找到token，跳过验证');
     }
     console.log('🏁 AuthStore: initializeAuth执行完成');
+  },
+
+  updateUserInfo: (user: User) => {
+    set({ user });
   }
 }));
