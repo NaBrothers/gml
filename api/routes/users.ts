@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
 import { userDb, gamePlayerDb, pointHistoryDb, gameDb } from '../utils/database.js';
 import { ApiResponse, User, PointHistory, GamePlayer, Game, UserRole } from '../../shared/types.js';
+import { uploadAvatar, saveAvatarFile, deleteAvatarFile } from '../middleware/upload.js';
+import { authenticateToken } from './auth.js';
 
 const router = express.Router();
 
@@ -55,7 +57,107 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// 更新用户信息
+// 更新当前用户资料（支持头像上传）
+router.put('/profile', authenticateToken, uploadAvatar, async (req: Request, res: Response) => {
+  try {
+    const { nickname } = req.body;
+    const file = req.file;
+    const userId = (req as any).user.userId;
+
+    const user = await userDb.findById(userId);
+    if (!user) {
+      const response: ApiResponse = {
+        success: false,
+        error: '用户不存在'
+      };
+      return res.status(404).json(response);
+    }
+
+    let avatarPath = user.avatar;
+
+    // 如果有新头像文件，处理文件上传
+    if (file) {
+      // 删除旧头像文件
+      if (user.avatar) {
+        await deleteAvatarFile(user.avatar);
+      }
+      
+      // 保存新头像文件
+      avatarPath = await saveAvatarFile(file.buffer, file.originalname, userId);
+    }
+
+    const updatedUser = await userDb.update(userId, {
+      nickname: nickname || user.nickname,
+      avatar: avatarPath
+    });
+
+    const response: ApiResponse<User> = {
+      success: true,
+      data: updatedUser!,
+      message: '用户资料更新成功'
+    };
+    res.json(response);
+  } catch (error) {
+    console.error('更新用户资料失败:', error);
+    const response: ApiResponse = {
+      success: false,
+      error: error instanceof Error ? error.message : '更新用户资料失败'
+    };
+    res.status(500).json(response);
+  }
+});
+
+// 更新用户资料（支持头像上传）- 管理员接口
+router.put('/:id/profile', uploadAvatar, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { nickname } = req.body;
+    const file = req.file;
+
+    const user = await userDb.findById(id);
+    if (!user) {
+      const response: ApiResponse = {
+        success: false,
+        error: '用户不存在'
+      };
+      return res.status(404).json(response);
+    }
+
+    let avatarPath = user.avatar;
+
+    // 如果有新头像文件，处理文件上传
+    if (file) {
+      // 删除旧头像文件
+      if (user.avatar) {
+        await deleteAvatarFile(user.avatar);
+      }
+      
+      // 保存新头像文件
+      avatarPath = await saveAvatarFile(file.buffer, file.originalname, id);
+    }
+
+    const updatedUser = await userDb.update(id, {
+      nickname: nickname || user.nickname,
+      avatar: avatarPath
+    });
+
+    const response: ApiResponse<User> = {
+      success: true,
+      data: updatedUser!,
+      message: '用户资料更新成功'
+    };
+    res.json(response);
+  } catch (error) {
+    console.error('更新用户资料失败:', error);
+    const response: ApiResponse = {
+      success: false,
+      error: error instanceof Error ? error.message : '更新用户资料失败'
+    };
+    res.status(500).json(response);
+  }
+});
+
+// 更新用户信息（保留原有接口）
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

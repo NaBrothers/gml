@@ -76,7 +76,7 @@ const Scoring: React.FC = () => {
       setShowResult(true);
       setTimeout(() => {
         setShowResult(false);
-        navigate('/');
+        navigate('/match-history');
       }, 3000);
     }
   };
