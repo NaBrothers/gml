@@ -41,7 +41,7 @@ const Avatar: React.FC<AvatarProps> = ({
   const borderClass = showBorder ? 'border-2 border-white shadow-lg' : '';
   const cursorClass = onClick ? 'cursor-pointer hover:opacity-80' : '';
   
-  const avatarUrl = src ? `http://localhost:3001${src}` : null;
+  const avatarUrl = src ? `/api${src}` : null;
 
   return (
     <div 
