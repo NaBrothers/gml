@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useUserStore } from '../stores/userStore';
-import { Trophy, Users, GamepadIcon, TrendingUp, LogIn, UserPlus, Crown, Sword, Menu, X, Star, Zap, User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { Trophy, Users, GamepadIcon, TrendingUp, LogIn, UserPlus, Crown, Sword, Menu, X, Star, Zap, User, Settings, LogOut, ChevronDown, History } from 'lucide-react';
 
 // 段位配置数据（与后端保持一致）
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
@@ -129,6 +129,14 @@ const Home: React.FC = () => {
                   <Users className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
                   <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">用户</span>
                 </Link>
+                
+                <Link 
+                  to="/match-history" 
+                  className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
+                >
+                  <History className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
+                  <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">记录</span>
+                </Link>
               </>
             )}
           </div>
@@ -160,7 +168,7 @@ const Home: React.FC = () => {
                       className="w-full flex items-center px-4 py-3 text-white hover:bg-white/10 transition-colors group"
                     >
                       <User className="w-4 h-4 mr-3 text-blue-400 group-hover:text-blue-300" />
-                      <span className="text-sm font-medium">比赛记录</span>
+                      <span className="text-sm font-medium">个人历史</span>
                     </button>
                     <button
                       onClick={handleSettingsClick}
@@ -203,98 +211,112 @@ const Home: React.FC = () => {
       {/* 移动端全屏菜单 */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-40 bg-gradient-to-br from-purple-600/95 via-pink-600/95 to-blue-600/95 backdrop-blur-lg">
-          <div className="flex flex-col items-center justify-center h-full space-y-8 px-8">
+          <div className="flex flex-col items-center justify-center h-full px-4 py-8">
             <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 via-orange-400 to-red-500 rounded-3xl flex items-center justify-center shadow-2xl mx-auto mb-4">
-                <Crown className="w-10 h-10 text-white" />
+              <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 via-orange-400 to-red-500 rounded-3xl flex items-center justify-center shadow-2xl mx-auto mb-3">
+                <Crown className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-white">雀魂记分系统</h2>
+              <h2 className="text-xl font-bold text-white">雀魂记分系统</h2>
             </div>
             
-            <div className="space-y-4 w-full max-w-xs">
+            {/* 九宫格菜单 */}
+            <div className="grid grid-cols-3 gap-4 w-full max-w-sm mb-8">
+              {/* 第一行 */}
               <Link 
                 to="/" 
-                className="flex items-center justify-center space-x-3 p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300"
+                className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <GamepadIcon className="w-6 h-6" />
-                <span className="text-lg font-medium">首页</span>
+                <GamepadIcon className="w-8 h-8 mb-2" />
+                <span className="text-sm font-medium text-center">首页</span>
               </Link>
               
               <Link 
                 to="/ranking" 
-                className="flex items-center justify-center space-x-3 p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300"
+                className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <Trophy className="w-6 h-6" />
-                <span className="text-lg font-medium">排行榜</span>
+                <Trophy className="w-8 h-8 mb-2" />
+                <span className="text-sm font-medium text-center">排行榜</span>
               </Link>
               
-              {isAuthenticated && (
+              <Link 
+                to="/match-history" 
+                className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <History className="w-8 h-8 mb-2" />
+                <span className="text-sm font-medium text-center">比赛记录</span>
+              </Link>
+              
+              {/* 第二行 */}
+              {isAuthenticated ? (
                 <>
                   <Link 
                     to="/scoring" 
-                    className="flex items-center justify-center space-x-3 p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300"
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <Sword className="w-6 h-6" />
-                    <span className="text-lg font-medium">记分</span>
+                    <Sword className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium text-center">记分</span>
                   </Link>
                   
                   <Link 
                     to="/users" 
-                    className="flex items-center justify-center space-x-3 p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300"
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
-                    <Users className="w-6 h-6" />
-                    <span className="text-lg font-medium">用户管理</span>
+                    <Users className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium text-center">用户管理</span>
                   </Link>
-                </>
-              )}
-              
-              {!isAuthenticated && (
-                <Link 
-                  to="/login" 
-                  className="flex items-center justify-center space-x-3 p-4 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white transition-all duration-300 shadow-lg"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <LogIn className="w-6 h-6" />
-                  <span className="text-lg font-medium">登录</span>
-                </Link>
-              )}
-            </div>
-            
-            {isAuthenticated && user && (
-              <div className="mt-8 text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg mx-auto mb-2">
-                  <span className="text-white text-xl font-bold">
-                    {user.nickname.charAt(0)}
-                  </span>
-                </div>
-                <span className="text-white text-lg font-medium">{user.nickname}</span>
-                
-                {/* 用户菜单选项 */}
-                <div className="mt-6 space-y-3 w-full max-w-xs mx-auto">
+                  
                   <button
                     onClick={() => {
                       handleProfileClick();
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-center space-x-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300"
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
                   >
-                    <User className="w-5 h-5" />
-                    <span className="text-base font-medium">比赛记录</span>
+                    <User className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium text-center">个人历史</span>
                   </button>
+                </>
+              ) : (
+                <>
+                  <Link 
+                    to="/login" 
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white transition-all duration-300 shadow-lg aspect-square"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <LogIn className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium text-center">登录</span>
+                  </Link>
                   
+                  {/* 占位按钮 */}
+                  <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 border border-white/10 text-white/50 aspect-square">
+                    <div className="w-8 h-8 mb-2"></div>
+                    <span className="text-sm font-medium text-center">-</span>
+                  </div>
+                  
+                  <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 border border-white/10 text-white/50 aspect-square">
+                    <div className="w-8 h-8 mb-2"></div>
+                    <span className="text-sm font-medium text-center">-</span>
+                  </div>
+                </>
+              )}
+              
+              {/* 第三行 */}
+              {isAuthenticated && (
+                <>
                   <button
                     onClick={() => {
                       handleSettingsClick();
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-center space-x-3 p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300"
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
                   >
-                    <Settings className="w-5 h-5" />
-                    <span className="text-base font-medium">设置</span>
+                    <Settings className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium text-center">设置</span>
                   </button>
                   
                   <button
@@ -302,12 +324,30 @@ const Home: React.FC = () => {
                       handleLogoutClick();
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-center space-x-3 p-3 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-white transition-all duration-300"
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-white transition-all duration-300 aspect-square"
                   >
-                    <LogOut className="w-5 h-5" />
-                    <span className="text-base font-medium">登出</span>
+                    <LogOut className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium text-center">登出</span>
                   </button>
+                  
+                  {/* 占位按钮 */}
+                  <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 border border-white/10 text-white/50 aspect-square">
+                    <div className="w-8 h-8 mb-2"></div>
+                    <span className="text-sm font-medium text-center">-</span>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            {/* 用户信息显示 */}
+            {isAuthenticated && user && (
+              <div className="text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center shadow-lg mx-auto mb-2">
+                  <span className="text-white text-lg font-bold">
+                    {user.nickname.charAt(0)}
+                  </span>
                 </div>
+                <span className="text-white text-base font-medium">{user.nickname}</span>
               </div>
             )}
           </div>
