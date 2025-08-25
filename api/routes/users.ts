@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import { userDb, gamePlayerDb, pointHistoryDb, gameDb } from '../utils/database.js';
-import { ApiResponse, User, PointHistory, GamePlayer, Game, UserRole } from '../../shared/types.js';
+import { userDb, gamePlayerDb, pointHistoryDb, gameDb, calculateUserStats, calculateUserPointHistory } from '../utils/database.js';
+import { ApiResponse, UserWithStats, PointHistory, GamePlayerDetail, GameRecord, UserRole } from '../../shared/types.js';
 import { uploadAvatar, saveAvatarFile, deleteAvatarFile } from '../middleware/upload.js';
 import { authenticateToken } from './auth.js';
 
@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/', async (req: Request, res: Response) => {
   try {
     const users = await userDb.findAll();
-    const response: ApiResponse<{ users: User[], total: number }> = {
+    const response: ApiResponse<{ users: UserWithStats[], total: number }> = {
       success: true,
       data: {
         users,
@@ -42,7 +42,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       return res.status(404).json(response);
     }
 
-    const response: ApiResponse<User> = {
+    const response: ApiResponse<UserWithStats> = {
       success: true,
       data: user
     };
@@ -91,9 +91,12 @@ router.put('/profile', authenticateToken, uploadAvatar, async (req: Request, res
       avatar: avatarPath
     });
 
-    const response: ApiResponse<User> = {
+    // 重新获取用户信息（包含统计数据）
+    const userWithStats = await userDb.findById(userId);
+
+    const response: ApiResponse<UserWithStats> = {
       success: true,
-      data: updatedUser!,
+      data: userWithStats!,
       message: '用户资料更新成功'
     };
     res.json(response);
@@ -101,13 +104,13 @@ router.put('/profile', authenticateToken, uploadAvatar, async (req: Request, res
     console.error('更新用户资料失败:', error);
     const response: ApiResponse = {
       success: false,
-      error: error instanceof Error ? error.message : '更新用户资料失败'
+      error: '更新用户资料失败'
     };
     res.status(500).json(response);
   }
 });
 
-// 更新用户资料（支持头像上传）- 管理员接口
+// 管理员更新用户资料（支持头像上传）
 router.put('/:id/profile', uploadAvatar, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -141,9 +144,12 @@ router.put('/:id/profile', uploadAvatar, async (req: Request, res: Response) => 
       avatar: avatarPath
     });
 
-    const response: ApiResponse<User> = {
+    // 重新获取用户信息（包含统计数据）
+    const userWithStats = await userDb.findById(id);
+
+    const response: ApiResponse<UserWithStats> = {
       success: true,
-      data: updatedUser!,
+      data: userWithStats!,
       message: '用户资料更新成功'
     };
     res.json(response);
@@ -151,17 +157,17 @@ router.put('/:id/profile', uploadAvatar, async (req: Request, res: Response) => 
     console.error('更新用户资料失败:', error);
     const response: ApiResponse = {
       success: false,
-      error: error instanceof Error ? error.message : '更新用户资料失败'
+      error: '更新用户资料失败'
     };
     res.status(500).json(response);
   }
 });
 
-// 更新用户信息（保留原有接口）
+// 更新用户信息
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { nickname, avatar } = req.body;
+    const updateData = req.body;
 
     const user = await userDb.findById(id);
     if (!user) {
@@ -172,14 +178,14 @@ router.put('/:id', async (req: Request, res: Response) => {
       return res.status(404).json(response);
     }
 
-    const updatedUser = await userDb.update(id, {
-      nickname: nickname || user.nickname,
-      avatar: avatar || user.avatar
-    });
+    const updatedUser = await userDb.update(id, updateData);
+    
+    // 重新获取用户信息（包含统计数据）
+    const userWithStats = await userDb.findById(id);
 
-    const response: ApiResponse<User> = {
+    const response: ApiResponse<UserWithStats> = {
       success: true,
-      data: updatedUser!,
+      data: userWithStats!,
       message: '用户信息更新成功'
     };
     res.json(response);
@@ -207,20 +213,26 @@ router.delete('/:id', async (req: Request, res: Response) => {
       return res.status(404).json(response);
     }
 
+    // 删除用户头像文件
+    if (user.avatar) {
+      await deleteAvatarFile(user.avatar);
+    }
+
     const deleted = await userDb.delete(id);
-    if (deleted) {
-      const response: ApiResponse = {
-        success: true,
-        message: '用户删除成功'
-      };
-      res.json(response);
-    } else {
+    
+    if (!deleted) {
       const response: ApiResponse = {
         success: false,
         error: '删除用户失败'
       };
-      res.status(500).json(response);
+      return res.status(500).json(response);
     }
+
+    const response: ApiResponse = {
+      success: true,
+      message: '用户删除成功'
+    };
+    res.json(response);
   } catch (error) {
     console.error('删除用户失败:', error);
     const response: ApiResponse = {
@@ -231,7 +243,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// 获取用户历史记录
+// 获取用户历史记录（使用实时计算）
 router.get('/:id/history', async (req: Request, res: Response) => {
   console.log(`[DEBUG] 收到历史记录请求: userId=${req.params.id}`);
   try {
@@ -248,8 +260,8 @@ router.get('/:id/history', async (req: Request, res: Response) => {
       return res.status(404).json(response);
     }
 
-    // 获取用户的积分历史记录
-    const pointHistories = await pointHistoryDb.findByUserId(id);
+    // 获取用户的积分历史记录（实时计算）
+    const pointHistories = calculateUserPointHistory(id);
     
     // 获取用户的对局记录
     const userGamePlayers = await gamePlayerDb.findByUserId(id);
@@ -257,29 +269,18 @@ router.get('/:id/history', async (req: Request, res: Response) => {
     // 为每个对局获取详细信息和其他玩家信息
     const gameHistories = await Promise.all(
       userGamePlayers.map(async (gamePlayer) => {
-        const game = await gameDb.findById(gamePlayer.gameId);
-        const allPlayers = await gamePlayerDb.findByGameId(gamePlayer.gameId);
-        
-        // 获取其他玩家的用户信息
-        const playersWithUsers = await Promise.all(
-          allPlayers.map(async (player) => {
-            const playerUser = await userDb.findById(player.userId);
-            return {
-              ...player,
-              user: playerUser
-            };
-          })
-        );
+        const game = await gameDb.findById(gamePlayer.id.split('_')[0]); // 从复合ID中提取gameId
+        const allPlayers = await gamePlayerDb.findByGameId(gamePlayer.id.split('_')[0]);
         
         // 获取对应的积分历史记录
-        const pointHistory = pointHistories.find(ph => ph.gameId === gamePlayer.gameId);
+        const pointHistory = pointHistories.find(ph => ph.gameId === gamePlayer.id.split('_')[0]);
         
         return {
           game,
           gamePlayer,
-          allPlayers: playersWithUsers,
+          allPlayers,
           pointHistory,
-          opponents: playersWithUsers.filter(p => p.userId !== id).map(p => p.user?.nickname || p.user?.username || '未知玩家')
+          opponents: allPlayers.filter(p => p.userId !== id).map(p => p.user?.nickname || p.user?.username || '未知玩家')
         };
       })
     );
@@ -290,22 +291,21 @@ router.get('/:id/history', async (req: Request, res: Response) => {
     // 分页处理
     const paginatedHistories = gameHistories.slice(Number(offset), Number(offset) + Number(limit));
     
-    // 计算统计数据
+    // 计算统计数据（使用实时计算的用户统计）
+    const userStats = calculateUserStats(id);
     const stats = {
-      totalGames: gameHistories.length,
-      wins: gameHistories.filter(h => h.gamePlayer.position === 1).length,
-      averagePosition: gameHistories.length > 0 
-        ? (gameHistories.reduce((sum, h) => sum + h.gamePlayer.position, 0) / gameHistories.length).toFixed(2)
-        : '0.00',
-      totalPointsChange: pointHistories.reduce((sum, ph) => sum + ph.pointsChange, 0),
-      currentPoints: user.totalPoints,
-      currentRank: user.rankLevel
+      totalGames: userStats.gamesPlayed,
+      wins: userStats.wins,
+      averagePosition: userStats.averagePosition.toString(),
+      totalPointsChange: userStats.totalPoints - 1800, // 总积分变化 = 当前积分 - 初始积分
+      currentPoints: userStats.totalPoints,
+      currentRank: userStats.rankLevel
     };
     
     // 准备图表数据（积分和段位变化）
     const chartData = {
       pointsHistory: pointHistories.map(ph => ({
-        date: ph.createdAt,
+        date: ph.gameDate,
         pointsBefore: ph.pointsBefore,
         pointsAfter: ph.pointsAfter,
         pointsChange: ph.pointsChange,
@@ -321,7 +321,7 @@ router.get('/:id/history', async (req: Request, res: Response) => {
     };
 
     const response: ApiResponse<{
-      user: User;
+      user: UserWithStats;
       histories: typeof paginatedHistories;
       stats: typeof stats;
       chartData: typeof chartData;
@@ -358,131 +358,84 @@ router.get('/:id/history', async (req: Request, res: Response) => {
   }
 });
 
-// 更新用户权限（仅超级管理员可用）
+// 更新用户角色
 router.put('/:id/role', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { role, operatorId } = req.body;
+    const { role } = req.body;
 
-    // 验证操作者权限
-    const operator = await userDb.findById(operatorId);
-    if (!operator || operator.role !== UserRole.SUPER_ADMIN) {
+    // 验证角色值
+    if (!Object.values(UserRole).includes(role)) {
       const response: ApiResponse = {
         success: false,
-        error: '权限不足，只有超级管理员可以修改用户权限'
+        error: '无效的角色值'
       };
-      return res.status(403).json(response);
+      return res.status(400).json(response);
     }
 
-    // 验证目标用户是否存在
-    const targetUser = await userDb.findById(id);
-    if (!targetUser) {
+    const user = await userDb.findById(id);
+    if (!user) {
       const response: ApiResponse = {
         success: false,
-        error: '目标用户不存在'
+        error: '用户不存在'
       };
       return res.status(404).json(response);
     }
 
-    // 验证权限级别是否有效
-    if (!Object.values(UserRole).includes(role)) {
-      const response: ApiResponse = {
-        success: false,
-        error: '无效的权限级别'
-      };
-      return res.status(400).json(response);
-    }
-
-    // 防止超级管理员降级自己
-    if (id === operatorId && role !== UserRole.SUPER_ADMIN) {
-      const response: ApiResponse = {
-        success: false,
-        error: '不能降级自己的权限'
-      };
-      return res.status(400).json(response);
-    }
-
-    // 更新用户权限
     const updatedUser = await userDb.update(id, { role });
+    
+    // 重新获取用户信息（包含统计数据）
+    const userWithStats = await userDb.findById(id);
 
-    const response: ApiResponse<User> = {
+    const response: ApiResponse<UserWithStats> = {
       success: true,
-      data: updatedUser!,
-      message: '用户权限更新成功'
+      data: userWithStats!,
+      message: '用户角色更新成功'
     };
     res.json(response);
   } catch (error) {
-    console.error('更新用户权限失败:', error);
+    console.error('更新用户角色失败:', error);
     const response: ApiResponse = {
       success: false,
-      error: '更新用户权限失败'
+      error: '更新用户角色失败'
     };
     res.status(500).json(response);
   }
 });
 
-// 获取用户权限信息
+// 获取用户权限
 router.get('/:id/permissions', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { requesterId } = req.query;
-
-    // 验证请求者权限
-    const requester = await userDb.findById(requesterId as string);
-    if (!requester) {
+    
+    const user = await userDb.findById(id);
+    if (!user) {
       const response: ApiResponse = {
         success: false,
-        error: '请求者不存在'
+        error: '用户不存在'
       };
       return res.status(404).json(response);
     }
 
-    // 验证目标用户是否存在
-    const targetUser = await userDb.findById(id);
-    if (!targetUser) {
-      const response: ApiResponse = {
-        success: false,
-        error: '目标用户不存在'
-      };
-      return res.status(404).json(response);
-    }
-
-    // 权限检查：只有管理员及以上可以查看其他用户权限，普通用户只能查看自己的
-    if (id !== requesterId && requester.role === UserRole.USER) {
-      const response: ApiResponse = {
-        success: false,
-        error: '权限不足，无法查看其他用户权限信息'
-      };
-      return res.status(403).json(response);
-    }
-
+    // 根据用户角色返回权限
     const permissions = {
-      canViewUsers: requester.role !== UserRole.USER,
-      canEditOwnProfile: true,
-      canEditOtherProfiles: requester.role === UserRole.SUPER_ADMIN,
-      canManageRoles: requester.role === UserRole.SUPER_ADMIN,
-      canDeleteUsers: requester.role === UserRole.SUPER_ADMIN,
-      canViewAllData: requester.role !== UserRole.USER
+      canManageUsers: user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN,
+      canManageGames: user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN,
+      canViewAllData: user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN,
+      canDeleteUsers: user.role === UserRole.SUPER_ADMIN,
+      canChangeRoles: user.role === UserRole.SUPER_ADMIN
     };
 
-    const response: ApiResponse<{
-      user: User;
-      permissions: typeof permissions;
-      canEditThisUser: boolean;
-    }> = {
+    const response: ApiResponse<typeof permissions> = {
       success: true,
-      data: {
-        user: targetUser,
-        permissions,
-        canEditThisUser: id === requesterId || requester.role === UserRole.SUPER_ADMIN
-      }
+      data: permissions
     };
     res.json(response);
   } catch (error) {
-    console.error('获取用户权限信息失败:', error);
+    console.error('获取用户权限失败:', error);
     const response: ApiResponse = {
       success: false,
-      error: '获取用户权限信息失败'
+      error: '获取用户权限失败'
     };
     res.status(500).json(response);
   }

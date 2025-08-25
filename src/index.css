@@ -31,6 +31,23 @@
   font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
+/* 自定义鼠标指针 - 仅在桌面端生效 */
+@media (min-width: 1024px) {
+  * {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' font-size='20'%3E🀄%3C/text%3E%3C/svg%3E") 16 16, auto !important;
+  }
+  
+  /* 为可点击元素提供不同的鼠标样式 */
+  a, button, input[type="submit"], input[type="button"], .cursor-pointer {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' font-size='22'%3E🀄%3C/text%3E%3C/svg%3E") 16 16, pointer !important;
+  }
+  
+  /* 为文本输入框提供文本光标样式 */
+  input[type="text"], input[type="password"], input[type="email"], textarea {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' font-size='18'%3E🀄%3C/text%3E%3C/svg%3E") 16 16, text !important;
+  }
+}
+
 body {
   background: linear-gradient(135deg, #FFB7C5 0%, #87CEEB 50%, #B19CD9 100%);
   min-height: 100vh;

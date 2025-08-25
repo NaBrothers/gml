@@ -159,36 +159,11 @@ const MatchHistory: React.FC = () => {
       {/* 导航栏 */}
       <nav className="bg-white/80 backdrop-blur-sm border-b border-pink-200">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* 移动端布局 */}
-            <div className="flex items-center justify-between w-full md:hidden">
-              <button
-                onClick={() => navigate('/')}
-                className="text-gray-600 hover:text-gray-800 transition-colors p-2"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <h1 className="text-xl font-bold text-gray-800 flex items-center absolute left-1/2 transform -translate-x-1/2">
-                <Clock className="w-5 h-5 mr-2 text-blue-500" />
-                比赛记录
-              </h1>
-              <div className="w-9"></div>
-            </div>
-            
-            {/* 桌面端布局 */}
-            <div className="hidden md:flex items-center justify-between w-full">
-              <button
-                onClick={() => navigate('/')}
-                className="text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                ← 返回首页
-              </button>
-              <h1 className="text-xl font-bold text-gray-800 flex items-center">
-                <Clock className="w-5 h-5 mr-2 text-blue-500" />
-                比赛记录
-              </h1>
-              <div></div>
-            </div>
+          <div className="flex items-center justify-center">
+            <h1 className="text-xl font-bold text-gray-800 flex items-center">
+              <Clock className="w-5 h-5 mr-2 text-blue-500" />
+              比赛记录
+            </h1>
           </div>
         </div>
       </nav>

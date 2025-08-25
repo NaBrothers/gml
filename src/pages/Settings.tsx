@@ -130,14 +130,7 @@ const Settings: React.FC = () => {
           </div>
           
           {/* 桌面端导航 */}
-          <div className="hidden lg:flex items-center justify-between max-w-4xl mx-auto">
-            <Link
-              to="/"
-              className="flex items-center space-x-2 text-gray-700 hover:text-pink-600 transition-colors group"
-            >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              <span className="font-medium">返回首页</span>
-            </Link>
+          <div className="hidden lg:flex items-center justify-center max-w-4xl mx-auto">
             <div className="flex items-center space-x-2">
               <SettingsIcon className="w-6 h-6 text-pink-600" />
               <h1 className="text-xl font-bold text-gray-800">设置</h1>
@@ -322,7 +315,7 @@ const Settings: React.FC = () => {
 
                 {/* 底部信息 */}
                 <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-                  <p className="text-sm text-gray-500 mb-2">雀魂记分系统</p>
+                  <p className="text-sm text-gray-500 mb-2">极客雀魂</p>
                   <p className="text-xs text-gray-400">更多功能正在开发中，敬请期待...</p>
                 </div>
               </div>

@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { userDb, getRankByPoints, parseRankInfo } from '../utils/database.js';
-import { ApiResponse, UserRegistration, UserLogin, AuthResponse, UserRole } from '../../shared/types.js';
+import { ApiResponse, UserRegistration, UserLogin, UserWithStats, UserRole } from '../../shared/types.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'mahjong-secret-key';
@@ -51,20 +51,17 @@ router.post('/register', async (req: Request, res: Response) => {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // 创建用户
-    const initialPoints = 1800;
-    const rankInfo = parseRankInfo(initialPoints);
+    // 创建用户（使用简化的数据结构）
     const user = await userDb.create({
       username,
       passwordHash,
       nickname: nickname || username,
       avatar: '',
-      role: UserRole.USER,
-      totalPoints: initialPoints,
-      rankLevel: rankInfo.rankConfig.rankOrder,
-      rankPoints: 0,
-      gamesPlayed: 0
+      role: UserRole.USER
     });
+
+    // 重新获取用户信息（包含统计数据）
+    const userWithStats = await userDb.findById(user.id);
 
     // 生成JWT token
     const token = jwt.sign(
@@ -73,10 +70,12 @@ router.post('/register', async (req: Request, res: Response) => {
       { expiresIn: '7d' }
     );
 
-    const response: AuthResponse = {
+    const response: ApiResponse<{ user: UserWithStats; token: string }> = {
       success: true,
-      token,
-      user,
+      data: {
+        user: userWithStats!,
+        token
+      },
       message: '注册成功'
     };
     res.status(201).json(response);
@@ -144,10 +143,13 @@ router.post('/login', async (req: Request, res: Response) => {
       { expiresIn: '7d' }
     );
 
-    const response: AuthResponse = {
+    console.log('✅ 登录成功 - 用户:', user.nickname);
+    const response: ApiResponse<{ user: UserWithStats; token: string }> = {
       success: true,
-      token,
-      user,
+      data: {
+        user,
+        token
+      },
       message: '登录成功'
     };
     res.json(response);
@@ -161,7 +163,6 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
-// 验证token中间件
 // 验证token并返回用户信息
 router.get('/verify', async (req: Request, res: Response) => {
   try {
@@ -189,10 +190,12 @@ router.get('/verify', async (req: Request, res: Response) => {
       return res.status(404).json(response);
     }
 
-    const response: AuthResponse = {
+    const response: ApiResponse<{ user: UserWithStats; token: string }> = {
       success: true,
-      token,
-      user,
+      data: {
+        user,
+        token
+      },
       message: 'Token验证成功'
     };
     res.json(response);
@@ -212,22 +215,20 @@ export const authenticateToken = (req: Request, res: Response, next: any) => {
   const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    const response: ApiResponse = {
+    return res.status(401).json({
       success: false,
       error: '访问令牌缺失'
-    };
-    return res.status(401).json(response);
+    });
   }
 
-  jwt.verify(token, JWT_SECRET, (err: any, decoded: any) => {
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) {
-      const response: ApiResponse = {
+      return res.status(403).json({
         success: false,
-        error: '访问令牌无效'
-      };
-      return res.status(403).json(response);
+        error: 'Token无效或已过期'
+      });
     }
-    (req as any).user = decoded;
+    (req as any).user = user;
     next();
   });
 };

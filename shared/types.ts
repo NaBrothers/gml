@@ -7,7 +7,7 @@ export enum UserRole {
   SUPER_ADMIN = 'super_admin'
 }
 
-// 用户接口
+// 简化的用户接口 - 只存储基本信息，不存储积分相关数据
 export interface User {
   id: string;
   username: string;
@@ -15,12 +15,24 @@ export interface User {
   nickname: string;
   avatar?: string;
   role: UserRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 用户统计信息 - 实时计算得出，不存储
+export interface UserStats {
   totalPoints: number;
   rankLevel: number;
   rankPoints: number;
   gamesPlayed: number;
-  createdAt: string;
-  updatedAt: string;
+  wins: number;
+  averagePosition: number;
+  currentRank: string;
+}
+
+// 完整的用户信息（基本信息 + 统计信息）
+export interface UserWithStats extends User {
+  stats: UserStats;
 }
 
 export interface UserRegistration {
@@ -37,52 +49,60 @@ export interface UserLogin {
 export interface AuthResponse {
   success: boolean;
   token?: string;
-  user?: User;
+  user?: UserWithStats;
   message?: string;
 }
 
-// 对局相关类型
-export interface Game {
+// 简化的对局记录 - 只存储核心信息
+export interface GameRecord {
   id: string;
   gameType: string;
   createdAt: string;
-  status: string;
+  players: GamePlayerRecord[];
 }
 
-export interface GamePlayer {
-  id: string;
-  gameId: string;
+// 对局中玩家记录 - 只存储基本得分信息
+export interface GamePlayerRecord {
   userId: string;
   finalScore: number;
-  rawPoints: number;
-  umaPoints: number;
-  rankPointsChange: number;
   position: number;
-  user?: User;
 }
 
+// 对局结果输入接口
 export interface GameResult {
   players: string[];
   scores: number[];
   gameType: string;
 }
 
+// 详细的对局信息 - 包含计算后的数据，用于展示
 export interface GameDetail {
-  game: Game;
-  players: GamePlayer[];
+  game: GameRecord;
+  players: GamePlayerDetail[];
 }
 
-// 积分历史类型
+// 详细的玩家对局信息 - 包含计算后的积分变化
+export interface GamePlayerDetail extends GamePlayerRecord {
+  user?: User;
+  rawPoints: number;
+  umaPoints: number;
+  rankPointsChange: number;
+  pointsBefore?: number;
+  pointsAfter?: number;
+  rankBefore?: string;
+  rankAfter?: string;
+}
+
+// 积分历史记录 - 实时计算，不存储
 export interface PointHistory {
-  id: string;
-  userId: string;
   gameId: string;
   pointsBefore: number;
   pointsAfter: number;
   pointsChange: number;
   rankBefore: string;
   rankAfter: string;
-  createdAt: string;
+  gameDate: string;
+  opponents: string[];
 }
 
 // 段位配置类型
@@ -100,7 +120,7 @@ export interface RankConfig {
   minorRankRange: [number, number]; // 小段位范围 [最小值, 最大值]
 }
 
-// 段位解析结果类型
+// 段位信息
 export interface RankInfo {
   majorRank: string; // 大段位
   minorRank: number; // 小段位数值
@@ -109,7 +129,7 @@ export interface RankInfo {
   rankConfig: RankConfig; // 段位配置
 }
 
-// 排行榜类型
+// 排行榜用户信息 - 实时计算
 export interface RankingUser {
   id: string;
   username: string;
@@ -121,7 +141,7 @@ export interface RankingUser {
   rank: number;
 }
 
-// API响应类型
+// API响应接口
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -129,7 +149,7 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
-// 麻将计算相关类型
+// 麻将积分计算结果
 export interface MahjongCalculation {
   finalScore: number;
   rawPoints: number;
@@ -138,7 +158,11 @@ export interface MahjongCalculation {
   position: number;
 }
 
-// 马点配置
+// 常量
 export const UMA_POINTS = [20, 10, 0, -10]; // 1-4位的马点
 export const BASE_POINTS = 25000; // 配点（精算原点）
 export const TOTAL_POINTS = 100000; // 四人总分
+
+// 兼容性类型定义（为了向后兼容，逐步迁移时使用）
+export interface Game extends GameRecord {}
+export interface GamePlayer extends GamePlayerDetail {}

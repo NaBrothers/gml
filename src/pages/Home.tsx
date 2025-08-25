@@ -1,60 +1,61 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useUserStore } from '../stores/userStore';
-import { Trophy, Users, GamepadIcon, TrendingUp, LogIn, UserPlus, Crown, Sword, Menu, X, Star, Zap, User, Settings, LogOut, ChevronDown, History } from 'lucide-react';
-import Avatar from '../components/Avatar';
+import { Trophy, LogIn, Star, Zap, X } from 'lucide-react';
 
 // 段位配置数据（与后端保持一致）
-import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
-
-
+import { getRankNameByLevel } from '../utils/rankConfigs';
+import QuoteBubble from '../components/QuoteBubble';
 
 const Home: React.FC = () => {
-  const navigate = useNavigate();
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const { rankings, fetchRankings } = useUserStore();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  const [isMobileRankingOpen, setIsMobileRankingOpen] = useState(false);
+  const [showQuote, setShowQuote] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     fetchRankings(10); // 获取前10名
+    
+    // 检测是否为移动设备
+    const checkMobile = () => {
+      const isMobileDevice = window.innerWidth < 1024;
+      setIsMobile(isMobileDevice);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
   }, [fetchRankings]);
 
-  // 点击外部关闭用户菜单
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setIsUserMenuOpen(false);
-      }
-    };
-
-    if (isUserMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isUserMenuOpen]);
-
-  // 处理用户菜单选项点击
-  const handleProfileClick = () => {
-    if (user) {
-      navigate(`/profile/${user.id}`);
-      setIsUserMenuOpen(false);
+  // 处理人物交互
+  const handleMouseEnter = () => {
+    if (!isMobile && !showQuote) {
+      setShowQuote(true);
     }
   };
 
-  const handleSettingsClick = () => {
-    navigate('/settings');
-    setIsUserMenuOpen(false);
+  const handleMouseLeave = () => {
+    if (!isMobile && showQuote) {
+      setShowQuote(false);
+    }
   };
 
-  const handleLogoutClick = () => {
-    logout();
-    setIsUserMenuOpen(false);
+  const handleClick = () => {
+    if (isMobile) {
+      setShowQuote(true);
+    } else {
+      // 桌面端也允许点击
+      setShowQuote(!showQuote);
+    }
+  };
+
+  const handleQuoteClose = () => {
+    setShowQuote(false);
   };
 
   return (
@@ -78,362 +79,256 @@ const Home: React.FC = () => {
         <div className="absolute bottom-40 right-1/3 w-8 h-8 bg-blue-400 rounded-full blur-sm animate-bounce opacity-70" style={{animationDelay: '0.5s'}} />
         <div className="absolute top-1/2 left-1/6 w-6 h-6 bg-orange-400 rounded-full blur-sm animate-pulse opacity-50" style={{animationDelay: '3s'}} />
       </div>
-      {/* 右侧二次元风格菜单栏 - 桌面端显示，移动端隐藏 */}
-      <div className="hidden md:flex fixed top-0 right-0 h-full w-20 md:w-24 z-50 flex-col">
-        {/* 菜单背景 */}
-        <div className="absolute inset-0 bg-gradient-to-b from-purple-600/90 via-pink-600/90 to-blue-600/90 backdrop-blur-lg border-l-4 border-yellow-400/50 shadow-2xl" />
-        
-        {/* 菜单内容 */}
-        <div className="relative z-10 flex flex-col h-full py-6">
-          {/* Logo区域 */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-yellow-400 via-orange-400 to-red-500 rounded-2xl flex items-center justify-center shadow-lg transform hover:scale-110 transition-all duration-300">
-              <Crown className="w-6 h-6 md:w-8 md:h-8 text-white" />
-            </div>
-            <div className="hidden md:block mt-2 text-xs font-bold text-white text-center leading-tight">
-              雀魂<br/>记分
-            </div>
-          </div>
-          
-          {/* 菜单项 */}
-          <div className="flex-1 flex flex-col space-y-4 px-2">
-            <Link 
-              to="/" 
-              className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
-            >
-              <GamepadIcon className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
-              <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">首页</span>
-            </Link>
-            
-            <Link 
-              to="/ranking" 
-              className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
-            >
-              <Trophy className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
-              <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">排行</span>
-            </Link>
-            
-            {isAuthenticated && (
-              <>
-                <Link 
-                  to="/scoring" 
-                  className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
-                >
-                  <Sword className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
-                  <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">记分</span>
-                </Link>
-                
-                <Link 
-                  to="/users" 
-                  className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
-                >
-                  <Users className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
-                  <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">用户</span>
-                </Link>
-                
-                <Link 
-                  to="/match-history" 
-                  className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
-                >
-                  <History className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
-                  <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">记录</span>
-                </Link>
-              </>
-            )}
-          </div>
-          
-          {/* 用户区域 */}
-          <div className="mt-auto px-2">
-            {isAuthenticated && user ? (
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="group flex flex-col items-center p-3 rounded-xl bg-gradient-to-br from-green-400/20 to-blue-400/20 hover:from-green-400/30 hover:to-blue-400/30 border border-green-400/30 hover:border-green-300/50 transition-all duration-300 transform hover:scale-105 w-full"
-                >
-                  <Avatar
-                    src={user.avatar}
-                    alt={user.nickname}
-                    size="md"
-                    className="shadow-lg group-hover:shadow-xl transition-shadow"
-                  />
-                  <div className="flex items-center mt-1">
-                    <span className="text-xs text-white/90 font-medium text-center truncate">{user.nickname}</span>
-                    <ChevronDown className={`w-3 h-3 text-white/70 ml-1 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
-                  </div>
-                </button>
 
-                {/* 下拉菜单 */}
-                {isUserMenuOpen && (
-                  <div className="absolute bottom-0 right-full mr-3 w-48 bg-gradient-to-br from-purple-900/95 via-pink-900/95 to-blue-900/95 backdrop-blur-lg rounded-xl border border-white/20 shadow-2xl overflow-hidden animate-in slide-in-from-right-2 duration-200">
-                    <button
-                      onClick={handleProfileClick}
-                      className="w-full flex items-center px-4 py-3 text-white hover:bg-white/10 transition-colors group"
-                    >
-                      <User className="w-4 h-4 mr-3 text-blue-400 group-hover:text-blue-300" />
-                      <span className="text-sm font-medium">个人历史</span>
-                    </button>
-                    <button
-                      onClick={handleSettingsClick}
-                      className="w-full flex items-center px-4 py-3 text-white hover:bg-white/10 transition-colors group"
-                    >
-                      <Settings className="w-4 h-4 mr-3 text-gray-400 group-hover:text-gray-300" />
-                      <span className="text-sm font-medium">设置</span>
-                    </button>
-                    <button
-                      onClick={handleLogoutClick}
-                      className="w-full flex items-center px-4 py-3 text-white hover:bg-white/10 hover:bg-red-500/20 transition-colors group border-t border-white/10"
-                    >
-                      <LogOut className="w-4 h-4 mr-3 text-red-400 group-hover:text-red-300" />
-                      <span className="text-sm font-medium">登出</span>
-                    </button>
-                  </div>
-                )}
+      {/* 主要内容 */}
+      <main className="min-h-screen flex relative px-4 md:px-0">
+        {/* 左侧内容区域 */}
+        <div className="flex-1 flex flex-col justify-center items-start relative z-10 max-w-2xl mx-auto md:mx-0 md:ml-8 lg:ml-16">
+          {/* 中央欢迎区域 */}
+          <div className="text-left mb-12 px-4 md:px-8 w-full">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 drop-shadow-2xl">
+              <span className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 bg-clip-text text-transparent">极客雀魂</span>
+            </h1>
+            
+            <p className="text-white/90 text-lg md:text-xl mb-8 drop-shadow-lg max-w-lg">
+              体验最纯粹的麻将竞技
+            </p>
+            
+            {!isAuthenticated && (
+              <div className="flex flex-col sm:flex-row gap-4 md:gap-6 w-2/3">
+                <Link
+                  to="/login"
+                  className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white font-bold text-lg rounded-full hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all duration-300 shadow-2xl hover:shadow-pink-500/30 transform hover:scale-105"
+                >
+                  <Zap className="w-6 h-6 mr-3 group-hover:animate-pulse" />
+                  登录
+                </Link>
+                <Link
+                  to="/ranking"
+                  className="group inline-flex items-center px-8 py-4 bg-white/10 backdrop-blur-md text-white font-bold text-lg rounded-full border-2 border-white/30 hover:bg-white/20 hover:border-white/50 transition-all duration-300 shadow-xl transform hover:scale-105"
+                >
+                  <Star className="w-6 h-6 mr-3 group-hover:animate-spin" />
+                  查看排行
+                </Link>
               </div>
-            ) : (
-              <Link
-                to="/login"
-                className="group flex flex-col items-center p-3 rounded-xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 border border-pink-400/30 hover:border-pink-300/50 transition-all duration-300 transform hover:scale-105"
-              >
-                <LogIn className="w-6 h-6 text-white group-hover:text-pink-300 transition-colors" />
-                <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">登录</span>
-              </Link>
             )}
           </div>
         </div>
-      </div>
-      
-      {/* 移动端汉堡菜单按钮 */}
-      <button
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="md:hidden fixed top-4 right-4 z-50 p-3 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full shadow-lg text-white hover:scale-110 transition-all duration-300"
-      >
-        {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
-      
-      {/* 移动端全屏菜单 */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-gradient-to-br from-purple-600/95 via-pink-600/95 to-blue-600/95 backdrop-blur-lg">
-          <div className="flex flex-col items-center justify-center h-full px-4 py-8">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 via-orange-400 to-red-500 rounded-3xl flex items-center justify-center shadow-2xl mx-auto mb-3">
-                <Crown className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-white">雀魂记分系统</h2>
+
+        {/* 右侧人像区域 */}
+        <div className="hidden lg:flex flex-1 justify-center items-end relative z-20 max-w-3xl">
+          <div className="relative">
+            {/* 人像背景光效 */}
+            <div className="absolute inset-0 bg-gradient-to-t from-pink-500/30 via-purple-500/20 to-transparent rounded-full blur-3xl scale-150 animate-pulse" />
+            
+            {/* 主要人像 */}
+            <div className="relative">
+              <img 
+                src="/image.png" 
+                alt="Game Character" 
+                className="relative z-10 max-h-[80vh] w-auto object-contain drop-shadow-2xl transform hover:scale-105 transition-transform duration-500 cursor-pointer"
+                style={{
+                  filter: 'drop-shadow(0 0 30px rgba(255, 255, 255, 0.3)) drop-shadow(0 0 60px rgba(255, 182, 193, 0.4))'
+                }}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                onClick={handleClick}
+              />
+              
+              {/* 气泡对话框 */}
+              <QuoteBubble 
+                isVisible={showQuote}
+                onClose={handleQuoteClose}
+                position="top"
+                className="animate-bounce"
+                showCloseButton={isMobile}
+                autoHide={isMobile}
+              />
             </div>
             
-            {/* 九宫格菜单 */}
-            <div className="grid grid-cols-3 gap-4 w-full max-w-sm mb-8">
-              {/* 第一行 */}
-              <Link 
-                to="/" 
-                className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
-                onClick={() => setIsMobileMenuOpen(false)}
+            {/* 底部光效 */}
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-64 h-32 bg-gradient-to-t from-white/20 to-transparent rounded-full blur-2xl" />
+          </div>
+        </div>
+
+        {/* 移动端人像（小尺寸背景装饰） */}
+        <div className="lg:hidden absolute bottom-0 right-4 transform opacity-100 z-0">
+          <div className="relative">
+            <img 
+              src="/image.png" 
+              alt="Game Character" 
+              className="max-h-96 w-auto object-contain cursor-pointer transform hover:scale-105 transition-transform duration-300"
+              onClick={handleClick}
+            />
+            
+            {/* 移动端气泡对话框 */}
+            <QuoteBubble 
+              isVisible={showQuote}
+              onClose={handleQuoteClose}
+              position="top"
+              className="animate-bounce"
+              showCloseButton={true}
+              autoHide={true}
+            />
+          </div>
+        </div>
+      </main>
+
+      {/* 桌面端排行榜小模块 */}
+      {rankings.length > 0 && (
+        <div className="hidden md:block fixed bottom-8 left-24 w-80 max-w-[calc(100vw-4rem)] z-30">
+          <div className="bg-gradient-to-br from-purple-900/95 via-pink-900/95 to-blue-900/95 backdrop-blur-lg rounded-2xl p-6 border-2 border-yellow-400/30 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center">
+                <Trophy className="w-5 h-5 mr-2 text-yellow-400" />
+                排行榜
+              </h3>
+              <Link
+                to="/ranking"
+                className="text-yellow-400 hover:text-yellow-300 text-sm font-medium transition-colors flex items-center"
               >
-                <GamepadIcon className="w-8 h-8 mb-2" />
-                <span className="text-sm font-medium text-center">首页</span>
+                更多 →
               </Link>
-              
-              <Link 
-                to="/ranking" 
-                className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <Trophy className="w-8 h-8 mb-2" />
-                <span className="text-sm font-medium text-center">排行榜</span>
-              </Link>
-              
-              <Link 
-                to="/match-history" 
-                className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <History className="w-8 h-8 mb-2" />
-                <span className="text-sm font-medium text-center">比赛记录</span>
-              </Link>
-              
-              {/* 第二行 */}
-              {isAuthenticated ? (
-                <>
-                  <Link 
-                    to="/scoring" 
-                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Sword className="w-8 h-8 mb-2" />
-                    <span className="text-sm font-medium text-center">记分</span>
-                  </Link>
-                  
-                  <Link 
-                    to="/users" 
-                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Users className="w-8 h-8 mb-2" />
-                    <span className="text-sm font-medium text-center">用户管理</span>
-                  </Link>
-                  
-                  <button
-                    onClick={() => {
-                      handleProfileClick();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
-                  >
-                    <User className="w-8 h-8 mb-2" />
-                    <span className="text-sm font-medium text-center">个人历史</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link 
-                    to="/login" 
-                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white transition-all duration-300 shadow-lg aspect-square"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <LogIn className="w-8 h-8 mb-2" />
-                    <span className="text-sm font-medium text-center">登录</span>
-                  </Link>
-                  
-                  {/* 占位按钮 */}
-                  <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 border border-white/10 text-white/50 aspect-square">
-                    <div className="w-8 h-8 mb-2"></div>
-                    <span className="text-sm font-medium text-center">-</span>
-                  </div>
-                  
-                  <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 border border-white/10 text-white/50 aspect-square">
-                    <div className="w-8 h-8 mb-2"></div>
-                    <span className="text-sm font-medium text-center">-</span>
-                  </div>
-                </>
-              )}
-              
-              {/* 第三行 */}
-              {isAuthenticated && (
-                <>
-                  <button
-                    onClick={() => {
-                      handleSettingsClick();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
-                  >
-                    <Settings className="w-8 h-8 mb-2" />
-                    <span className="text-sm font-medium text-center">设置</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      handleLogoutClick();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-white transition-all duration-300 aspect-square"
-                  >
-                    <LogOut className="w-8 h-8 mb-2" />
-                    <span className="text-sm font-medium text-center">登出</span>
-                  </button>
-                  
-                  {/* 占位按钮 */}
-                  <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/5 border border-white/10 text-white/50 aspect-square">
-                    <div className="w-8 h-8 mb-2"></div>
-                    <span className="text-sm font-medium text-center">-</span>
-                  </div>
-                </>
-              )}
             </div>
             
-            {/* 用户信息显示 */}
-            {isAuthenticated && user && (
-              <div className="text-center">
-                <Avatar
-                  src={user.avatar}
-                  alt={user.nickname}
-                  size="lg"
-                  className="shadow-lg mx-auto mb-2"
-                />
-                <span className="text-white text-base font-medium">{user.nickname}</span>
-              </div>
-            )}
+            <div className="space-y-2">
+              {rankings.slice(0, 3).map((user, index) => (
+                <div key={user.id} className="flex items-center justify-between p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-200">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                      index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+                      index === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-400' :
+                      'bg-gradient-to-r from-amber-500 to-amber-600'
+                    }`}>
+                      {index === 0 ? '👑' : index + 1}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-white text-sm font-medium truncate">{user.nickname}</div>
+                      <div className="text-yellow-300/80 text-xs truncate">{getRankNameByLevel(user.rankLevel)}</div>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-white text-sm font-bold">{user.totalPoints}</div>
+                    <div className="text-white/60 text-xs">{user.gamesPlayed}局</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* 主要内容 */}
-      <main className="md:pr-24 min-h-screen flex flex-col justify-center items-center relative px-4 md:px-0">
-        {/* 中央欢迎区域 */}
-        <div className="text-center mb-12 px-4 md:px-8 w-full max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 drop-shadow-2xl">
-            <span className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 bg-clip-text text-transparent">
-              极客雀魂
-            </span>
-          </h1>
-          <p className="text-xl md:text-2xl text-white/90 mb-8 drop-shadow-lg font-medium">
-            专业麻将记分 · 段位晋升 · 排行统计
-          </p>
-          
-          {!isAuthenticated && (
-            <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center items-center w-full">
-              <Link
-                to="/login"
-                className="group inline-flex items-center px-10 py-5 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white font-bold text-lg rounded-full hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all duration-300 shadow-2xl hover:shadow-pink-500/30 transform hover:scale-110"
-              >
-                <Zap className="w-6 h-6 mr-3 group-hover:animate-pulse" />
-                登录
-              </Link>
-              <Link
-                to="/ranking"
-                className="group inline-flex items-center px-10 py-5 bg-white/10 backdrop-blur-md text-white font-bold text-lg rounded-full border-2 border-white/30 hover:bg-white/20 hover:border-white/50 transition-all duration-300 shadow-xl transform hover:scale-110"
-              >
-                <Star className="w-6 h-6 mr-3 group-hover:animate-spin" />
-                查看排行
-              </Link>
-            </div>
+      {/* 移动端排行榜浮动按钮 */}
+      {rankings.length > 0 && (
+        <div className="md:hidden">
+          {/* 浮动按钮 */}
+          <button
+            onClick={() => setIsMobileRankingOpen(true)}
+            className="fixed bottom-6 left-6 w-14 h-14 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 rounded-full shadow-2xl border-2 border-yellow-400/50 z-40 flex items-center justify-center transform hover:scale-110 transition-all duration-300"
+            style={{
+              boxShadow: '0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(147, 51, 234, 0.3)'
+            }}
+          >
+            <Trophy className="w-6 h-6 text-yellow-400 animate-pulse" />
+          </button>
+
+          {/* 移动端排行榜弹窗 */}
+          {isMobileRankingOpen && (
+            <>
+              {/* 背景遮罩 */}
+              <div 
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+                onClick={() => setIsMobileRankingOpen(false)}
+              />
+              
+              {/* 排行榜内容 - 阿拉丁神灯效果 */}
+              <div className="fixed inset-0 z-50 flex items-end justify-start p-4">
+                <div 
+                  className="bg-gradient-to-br from-purple-900/95 via-pink-900/95 to-blue-900/95 backdrop-blur-lg rounded-2xl p-6 border-2 border-yellow-400/30 shadow-2xl w-full max-w-sm transform transition-all duration-700 ease-out"
+                  style={{
+                    animation: 'genieEmerge 0.7s ease-out forwards',
+                    transformOrigin: 'bottom left'
+                  }}
+                >
+                  {/* 关闭按钮 */}
+                  <button
+                    onClick={() => setIsMobileRankingOpen(false)}
+                    className="absolute top-4 right-4 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+
+                  <div className="flex items-center justify-between mb-4 pr-8">
+                    <h3 className="text-lg font-bold text-white flex items-center">
+                      <Trophy className="w-5 h-5 mr-2 text-yellow-400" />
+                      排行榜
+                    </h3>
+                  </div>
+                  
+                  <div className="space-y-3 mb-4">
+                    {rankings.slice(0, 5).map((user, index) => (
+                      <div key={user.id} className="flex items-center justify-between p-3 bg-white/10 rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+                            index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+                            index === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-400' :
+                            index === 2 ? 'bg-gradient-to-r from-amber-500 to-amber-600' :
+                            'bg-gradient-to-r from-slate-500 to-slate-600'
+                          }`}>
+                            {index === 0 ? '👑' : index + 1}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-white text-sm font-medium truncate">{user.nickname}</div>
+                            <div className="text-yellow-300/80 text-xs truncate">{getRankNameByLevel(user.rankLevel)}</div>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-white text-sm font-bold">{user.totalPoints}</div>
+                          <div className="text-white/60 text-xs">{user.gamesPlayed}局</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Link
+                    to="/ranking"
+                    onClick={() => setIsMobileRankingOpen(false)}
+                    className="block w-full text-center py-3 bg-gradient-to-r from-yellow-400 to-yellow-500 text-purple-900 font-bold rounded-lg hover:from-yellow-300 hover:to-yellow-400 transition-all duration-300"
+                  >
+                    查看完整排行榜
+                  </Link>
+                </div>
+              </div>
+            </>
           )}
         </div>
+      )}
 
-        {/* 排行榜小模块 */}
-        {rankings.length > 0 && (
-          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 md:bottom-8 md:left-8 md:transform-none md:translate-x-0 w-64 md:w-80 max-w-[calc(100vw-2rem)] md:max-w-[calc(100vw-12rem)] z-30">
-            <div className="bg-gradient-to-br from-purple-900/95 via-pink-900/95 to-blue-900/95 backdrop-blur-lg rounded-2xl p-4 md:p-6 border-2 border-yellow-400/30 shadow-2xl">
-              <div className="flex items-center justify-between mb-3 md:mb-4">
-                <h3 className="text-base md:text-lg font-bold text-white flex items-center">
-                  <Trophy className="w-4 h-4 md:w-5 md:h-5 mr-2 text-yellow-400" />
-                  排行榜
-                </h3>
-                <Link
-                  to="/ranking"
-                  className="text-yellow-400 hover:text-yellow-300 text-xs md:text-sm font-medium transition-colors flex items-center"
-                >
-                  更多 →
-                </Link>
-              </div>
-              
-              <div className="space-y-2">
-                {rankings.slice(0, 3).map((user, index) => (
-                  <div key={user.id} className="flex items-center justify-between p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-200">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${
-                        index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
-                        index === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-400' :
-                        'bg-gradient-to-r from-amber-500 to-amber-600'
-                      }`}>
-                        {index === 0 ? '👑' : index + 1}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-white text-xs md:text-sm font-medium truncate">{user.nickname}</div>
-                        <div className="text-yellow-300/80 text-xs truncate">{getRankNameByLevel(user.rankLevel)}</div>
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-white text-xs md:text-sm font-bold">{user.totalPoints}</div>
-                      <div className="text-white/60 text-xs">{user.gamesPlayed}局</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
+      {/* 阿拉丁神灯动画样式 */}
+      <style jsx>{`
+        @keyframes genieEmerge {
+          0% {
+            transform: scale(0) rotate(-180deg);
+            opacity: 0;
+          }
+          30% {
+            transform: scale(0.3) rotate(-90deg);
+            opacity: 0.5;
+          }
+          60% {
+            transform: scale(0.8) rotate(-20deg);
+            opacity: 0.8;
+          }
+          80% {
+            transform: scale(1.1) rotate(5deg);
+            opacity: 0.95;
+          }
+          100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -2,7 +2,7 @@
  * local server entry file, for local development
  */
 import app from './app.js';
-import { initializeTestData } from './utils/database.js';
+import { initializeDatabase } from './utils/database.js';
 
 /**
  * start server with port
@@ -17,7 +17,7 @@ const server = app.listen(PORT, async () => {
   console.log(`🚀 启动模式: ${isProduction ? '生产环境' : '开发环境'}`);
   
   try {
-    await initializeTestData();
+    await initializeDatabase();
   } catch (error) {
     console.error('❌ 数据库初始化失败:', error);
   }

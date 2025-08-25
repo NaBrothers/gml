@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { userDb, gameDb, gamePlayerDb, pointHistoryDb, calculateMahjongPoints, getRankByPoints, parseRankInfo } from '../utils/database.js';
-import { ApiResponse, GameResult, GameDetail, Game } from '../../shared/types.js';
+import { ApiResponse, GameResult, GameDetail, GameRecord, GamePlayerDetail } from '../../shared/types.js';
 
 const router = express.Router();
 
@@ -42,77 +42,31 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json(response);
     }
 
-    // 创建对局记录
-    const game = await gameDb.create({
-      gameType,
-      status: 'completed'
-    });
-
-    // 创建对局玩家记录和更新用户积分
-    const gamePlayerPromises = players.map(async (playerId, index) => {
-      const user = users[index]!;
-      const calculation = calculations[index];
-      
-      // 记录积分变化前的状态
-      const pointsBefore = user.totalPoints;
-      const rankBeforeInfo = parseRankInfo(pointsBefore);
-      const rankBefore = rankBeforeInfo.displayName;
-      
-      // 计算新积分和段位
-      const pointsAfter = pointsBefore + calculation.rankPoints;
-      const rankAfterInfo = parseRankInfo(pointsAfter);
-      const rankAfter = rankAfterInfo.displayName;
-      
-      // 更新用户积分和段位
-      await userDb.update(playerId, {
-        totalPoints: pointsAfter,
-        rankLevel: rankAfterInfo.rankConfig.rankOrder,
-        gamesPlayed: user.gamesPlayed + 1
-      });
-      
-      // 创建积分历史记录
-      await pointHistoryDb.create({
-        userId: playerId,
-        gameId: game.id,
-        pointsBefore,
-        pointsAfter,
-        pointsChange: calculation.rankPoints,
-        rankBefore,
-        rankAfter
-      });
-      
-      // 创建对局玩家记录
-      return await gamePlayerDb.create({
-        gameId: game.id,
-        userId: playerId,
-        finalScore: calculation.finalScore,
-        rawPoints: calculation.rawPoints,
-        umaPoints: calculation.umaPoints,
-        rankPointsChange: calculation.rankPoints,
-        position: calculation.position
-      });
-    });
-
-    const gamePlayers = await Promise.all(gamePlayerPromises);
-
-    // 获取更新后的用户信息
-    const updatedUsers = await Promise.all(players.map(playerId => userDb.findById(playerId)));
-    
-    // 为对局玩家添加用户信息
-    const gamePlayersWithUsers = gamePlayers.map((gamePlayer, index) => ({
-      ...gamePlayer,
-      user: updatedUsers[index]
+    // 创建对局玩家记录
+    const gamePlayerRecords = players.map((playerId, index) => ({
+      userId: playerId,
+      finalScore: scores[index],
+      position: calculations[index].position
     }));
 
+    // 创建对局记录（使用新的简化结构）
+    const game = await gameDb.create({
+      gameType,
+      players: gamePlayerRecords
+    });
+
+    // 获取详细的对局信息（包含计算后的数据）
+    const gamePlayersWithDetails = await gamePlayerDb.findByGameId(game.id);
+
     const response: ApiResponse<{
-      game: Game;
-      players: typeof gamePlayersWithUsers;
+      game: GameRecord;
+      players: GamePlayerDetail[];
       pointChanges: typeof calculations;
     }> = {
       success: true,
       data: {
         game,
-        players: gamePlayersWithUsers,
+        players: gamePlayersWithDetails,
         pointChanges: calculations
       },
       message: '对局记录创建成功'
@@ -138,19 +92,17 @@ router.get('/', async (req: Request, res: Response) => {
     const gamesWithPlayers = await Promise.all(
       games.map(async (game) => {
         const players = await gamePlayerDb.findByGameId(game.id);
-        const playersWithUsers = await Promise.all(
-          players.map(async (player) => {
-            const user = await userDb.findById(player.userId);
-            return { ...player, user };
-          })
-        );
-        return { game, players: playersWithUsers };
+        return {
+          game,
+          players
+        };
       })
     );
 
     const response: ApiResponse<GameDetail[]> = {
       success: true,
-      data: gamesWithPlayers
+      data: gamesWithPlayers,
+      message: '获取对局记录成功'
     };
     res.json(response);
   } catch (error) {
@@ -167,30 +119,27 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const game = await gameDb.findById(id);
     
+    const game = await gameDb.findById(id);
     if (!game) {
       const response: ApiResponse = {
         success: false,
-        error: '对局不存在'
+        error: '对局记录不存在'
       };
       return res.status(404).json(response);
     }
 
     const players = await gamePlayerDb.findByGameId(id);
-    const playersWithUsers = await Promise.all(
-      players.map(async (player) => {
-        const user = await userDb.findById(player.userId);
-        return { ...player, user };
-      })
-    );
+    
+    const gameDetail: GameDetail = {
+      game,
+      players
+    };
 
     const response: ApiResponse<GameDetail> = {
       success: true,
-      data: {
-        game,
-        players: playersWithUsers
-      }
+      data: gameDetail,
+      message: '获取对局详情成功'
     };
     res.json(response);
   } catch (error) {
