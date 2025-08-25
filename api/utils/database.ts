@@ -275,10 +275,20 @@ export const userDb = {
 
   async findAll(): Promise<UserWithStats[]> {
     await loadAllData();
-    return users.map(user => ({
-      ...user,
-      stats: calculateUserStats(user.id)
-    }));
+    return users.map(user => {
+      const stats = calculateUserStats(user.id);
+      return {
+        ...user,
+        stats,
+        totalPoints: stats.totalPoints,
+        rankLevel: stats.rankLevel,
+        rankPoints: stats.rankPoints,
+        gamesPlayed: stats.gamesPlayed,
+        wins: stats.wins,
+        averagePosition: stats.averagePosition,
+        currentRank: stats.currentRank
+      };
+    });
   },
 
   async findById(id: string): Promise<UserWithStats | null> {
@@ -286,9 +296,17 @@ export const userDb = {
     const user = users.find(user => user.id === id);
     if (!user) return null;
     
+    const stats = calculateUserStats(user.id);
     return {
       ...user,
-      stats: calculateUserStats(user.id)
+      stats,
+      totalPoints: stats.totalPoints,
+      rankLevel: stats.rankLevel,
+      rankPoints: stats.rankPoints,
+      gamesPlayed: stats.gamesPlayed,
+      wins: stats.wins,
+      averagePosition: stats.averagePosition,
+      currentRank: stats.currentRank
     };
   },
 
@@ -297,9 +315,17 @@ export const userDb = {
     const user = users.find(user => user.username === username);
     if (!user) return null;
     
+    const stats = calculateUserStats(user.id);
     return {
       ...user,
-      stats: calculateUserStats(user.id)
+      stats,
+      totalPoints: stats.totalPoints,
+      rankLevel: stats.rankLevel,
+      rankPoints: stats.rankPoints,
+      gamesPlayed: stats.gamesPlayed,
+      wins: stats.wins,
+      averagePosition: stats.averagePosition,
+      currentRank: stats.currentRank
     };
   },
 

@@ -127,7 +127,24 @@ export const authApi = {
     if (response.success && response.data?.token) {
       apiClient.setToken(response.data.token);
     }
-    return response;
+    // 确保返回正确的AuthResponse格式
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: {
+          token: response.data.token!,
+          user: response.data.user!
+        },
+        token: response.data.token,
+        user: response.data.user,
+        message: response.message
+      };
+    } else {
+      return {
+        success: false,
+        error: response.error || response.message || '登录失败'
+      };
+    }
   },
 
   // 用户登出

@@ -33,6 +33,14 @@ export interface UserStats {
 // 完整的用户信息（基本信息 + 统计信息）
 export interface UserWithStats extends User {
   stats: UserStats;
+  // 添加直接访问的属性以保持向后兼容
+  totalPoints: number;
+  rankLevel: number;
+  rankPoints: number;
+  gamesPlayed: number;
+  wins: number;
+  averagePosition: number;
+  currentRank: string;
 }
 
 export interface UserRegistration {
@@ -48,9 +56,14 @@ export interface UserLogin {
 
 export interface AuthResponse {
   success: boolean;
+  data?: {
+    token: string;
+    user: UserWithStats;
+  };
   token?: string;
   user?: UserWithStats;
   message?: string;
+  error?: string;
 }
 
 // 简化的对局记录 - 只存储核心信息
@@ -83,6 +96,7 @@ export interface GameDetail {
 
 // 详细的玩家对局信息 - 包含计算后的积分变化
 export interface GamePlayerDetail extends GamePlayerRecord {
+  id: string; // 复合ID: gameId_userId
   user?: User;
   rawPoints: number;
   umaPoints: number;

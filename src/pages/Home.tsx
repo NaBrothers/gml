@@ -305,7 +305,7 @@ const Home: React.FC = () => {
       )}
 
       {/* 阿拉丁神灯动画样式 */}
-      <style jsx>{`
+      <style>{`
         @keyframes genieEmerge {
           0% {
             transform: scale(0) rotate(-180deg);
