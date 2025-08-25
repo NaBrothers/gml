@@ -1,14 +1,12 @@
-// 文件存储工具模块
+// 文件存储工具模块 - 简化版本
 import { promises as fs } from 'fs';
 import path from 'path';
-import { User, Game, GamePlayer, PointHistory } from '../../shared/types.js';
+import { User, GameRecord } from '../../shared/types.js';
 
 // 数据文件路径
 const DATA_DIR = path.join(process.cwd(), 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const GAMES_FILE = path.join(DATA_DIR, 'games.json');
-const GAME_PLAYERS_FILE = path.join(DATA_DIR, 'gamePlayers.json');
-const POINT_HISTORY_FILE = path.join(DATA_DIR, 'pointHistory.json');
 
 // 确保数据目录存在
 export async function ensureDataDirectory(): Promise<void> {
@@ -56,36 +54,16 @@ export const userFileStorage = {
 
 // 对局数据文件操作
 export const gameFileStorage = {
-  async load(): Promise<Game[]> {
-    return readJsonFile<Game>(GAMES_FILE, []);
+  async load(): Promise<GameRecord[]> {
+    return readJsonFile<GameRecord>(GAMES_FILE, []);
   },
 
-  async save(games: Game[]): Promise<void> {
+  async save(games: GameRecord[]): Promise<void> {
     await writeJsonFile(GAMES_FILE, games);
   }
 };
 
-// 对局玩家数据文件操作
-export const gamePlayerFileStorage = {
-  async load(): Promise<GamePlayer[]> {
-    return readJsonFile<GamePlayer>(GAME_PLAYERS_FILE, []);
-  },
 
-  async save(gamePlayers: GamePlayer[]): Promise<void> {
-    await writeJsonFile(GAME_PLAYERS_FILE, gamePlayers);
-  }
-};
-
-// 积分历史数据文件操作
-export const pointHistoryFileStorage = {
-  async load(): Promise<PointHistory[]> {
-    return readJsonFile<PointHistory>(POINT_HISTORY_FILE, []);
-  },
-
-  async save(pointHistory: PointHistory[]): Promise<void> {
-    await writeJsonFile(POINT_HISTORY_FILE, pointHistory);
-  }
-};
 
 // 初始化所有数据文件
 export async function initializeDataFiles(): Promise<void> {
@@ -94,9 +72,7 @@ export async function initializeDataFiles(): Promise<void> {
   // 检查并创建空的数据文件（如果不存在）
   const files = [
     { path: USERS_FILE, data: [] },
-    { path: GAMES_FILE, data: [] },
-    { path: GAME_PLAYERS_FILE, data: [] },
-    { path: POINT_HISTORY_FILE, data: [] }
+    { path: GAMES_FILE, data: [] }
   ];
 
   for (const file of files) {
@@ -108,3 +84,22 @@ export async function initializeDataFiles(): Promise<void> {
     }
   }
 }
+
+// 兼容性导出（为了向后兼容）
+export const gamePlayerFileStorage = {
+  async load(): Promise<any[]> {
+    return [];
+  },
+  async save(data: any[]): Promise<void> {
+    // 不再存储，忽略
+  }
+};
+
+export const pointHistoryFileStorage = {
+  async load(): Promise<any[]> {
+    return [];
+  },
+  async save(data: any[]): Promise<void> {
+    // 不再存储，忽略
+  }
+};

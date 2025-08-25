@@ -1,10 +1,10 @@
 // 用户认证状态管理
 import { create } from 'zustand';
-import { User } from '../../shared/types';
+import { UserWithStats } from '../../shared/types';
 import { authApi } from '../lib/api';
 
 interface AuthState {
-  user: User | null;
+  user: UserWithStats | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -16,7 +16,7 @@ interface AuthState {
   logout: () => void;
   clearError: () => void;
   initializeAuth: () => void;
-  updateUserInfo: (user: User) => void;
+  updateUserInfo: (user: UserWithStats) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -33,12 +33,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await authApi.login({ username, password });
       console.log('AuthStore received response:', response);
       
-      if (response.success && response.user && response.token) {
+      if (response.success && response.data?.user && response.data?.token) {
         // 保存token到localStorage
-        authApi.setToken(response.token);
+        authApi.setToken(response.data.token);
         set({
-          user: response.user,
-          token: response.token,
+          user: response.data.user,
+          token: response.data.token,
           isAuthenticated: true,
           isLoading: false,
           error: null
@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({
           isLoading: false,
-          error: response.message || '登录失败'
+          error: response.error || '登录失败'
         });
         return false;
       }
@@ -67,12 +67,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const response = await authApi.register({ username, password, nickname });
       
-      if (response.success && response.user && response.token) {
+      if (response.success && response.data?.user && response.data?.token) {
         // 保存token到localStorage
-        authApi.setToken(response.token);
+        authApi.setToken(response.data.token);
         set({
-          user: response.user,
-          token: response.token,
+          user: response.data.user,
+          token: response.data.token,
           isAuthenticated: true,
           isLoading: false,
           error: null
@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({
           isLoading: false,
-          error: response.message || '注册失败'
+          error: response.error || '注册失败'
         });
         return false;
       }
@@ -109,57 +109,52 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initializeAuth: async () => {
-    console.log('🔍 AuthStore: initializeAuth开始执行');
     const token = localStorage.getItem('auth_token');
-    console.log('🔑 AuthStore: localStorage中的token:', token ? `存在(长度:${token.length})` : '不存在');
+    if (!token) {
+      return;
+    }
+
+    set({ isLoading: true });
     
-    if (token) {
-      console.log('📤 AuthStore: 设置token到API客户端');
+    try {
       authApi.setToken(token);
+      const response = await authApi.verify();
+      console.log('🔍 AuthStore: verify响应:', response);
       
-      try {
-        console.log('🌐 AuthStore: 开始调用verify接口');
-        // 验证token并获取用户信息
-        const response = await authApi.verify();
-        console.log('📥 AuthStore: verify接口响应:', response);
-        
-        if (response.success && response.user && response.token) {
-          console.log('✅ AuthStore: token验证成功，设置用户状态:', response.user.nickname);
-          set({
-            user: response.user,
-            token: response.token,
-            isAuthenticated: true,
-            error: null
-          });
-        } else {
-          console.log('❌ AuthStore: token验证失败，清除本地存储');
-          // token无效，清除本地存储
-          authApi.clearToken();
-          set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-            error: null
-          });
-        }
-      } catch (error) {
-        console.error('💥 AuthStore: Token验证异常:', error);
-        // token验证失败，清除本地存储
+      if (response.success && response.data?.user) {
+        set({
+          user: response.data.user,
+          token: response.data.token || token,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null
+        });
+        console.log('✅ AuthStore: 认证成功，用户信息已设置');
+      } else {
+        console.log('❌ AuthStore: 认证失败，清除本地token');
         authApi.clearToken();
         set({
           user: null,
           token: null,
           isAuthenticated: false,
+          isLoading: false,
           error: null
         });
       }
-    } else {
-      console.log('⚠️ AuthStore: 没有找到token，跳过验证');
+    } catch (error) {
+      console.error('💥 AuthStore: 初始化认证失败:', error);
+      authApi.clearToken();
+      set({
+        user: null,
+        token: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null
+      });
     }
-    console.log('🏁 AuthStore: initializeAuth执行完成');
   },
 
-  updateUserInfo: (user: User) => {
+  updateUserInfo: (user: UserWithStats) => {
     set({ user });
   }
 }));
