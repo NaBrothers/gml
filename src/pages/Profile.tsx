@@ -178,12 +178,6 @@ const Profile: React.FC = () => {
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">加载失败</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => navigate('/ranking')}
-            className="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
-          >
-            返回排行榜
-          </button>
         </div>
       </div>
     );
@@ -196,32 +190,8 @@ const Profile: React.FC = () => {
       {/* 导航栏 */}
       <nav className="bg-white/80 backdrop-blur-sm border-b border-pink-200">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* 移动端布局 */}
-            <div className="flex items-center justify-between w-full md:hidden">
-              <button
-                onClick={() => navigate('/ranking')}
-                className="flex items-center text-pink-600 hover:text-pink-700 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 mr-1" />
-                返回
-              </button>
-              <h1 className="text-lg font-bold text-gray-800">用户详情</h1>
-              <div className="w-16"></div>
-            </div>
-            
-            {/* 桌面端布局 */}
-            <div className="hidden md:flex items-center justify-between w-full">
-              <button
-                onClick={() => navigate('/ranking')}
-                className="flex items-center text-pink-600 hover:text-pink-700 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 mr-2" />
-                返回排行榜
-              </button>
-              <h1 className="text-2xl font-bold text-gray-800">用户详情</h1>
-              <div className="w-32"></div>
-            </div>
+          <div className="flex items-center justify-center">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">用户详情</h1>
           </div>
         </div>
       </nav>
