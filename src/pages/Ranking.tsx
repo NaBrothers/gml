@@ -5,6 +5,7 @@ import { rankingApi } from '../lib/api';
 import { Trophy, Medal, Crown, TrendingUp, Users, BarChart3, ArrowLeft } from 'lucide-react';
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
 import Avatar from '../components/Avatar';
+import HeaderBar from '../components/HeaderBar';
 
 // 段位配置数据（与后端保持一致）
 
@@ -84,17 +85,7 @@ const Ranking: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50">
-      {/* 导航栏 */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-pink-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-center">
-            <h1 className="text-xl font-bold text-gray-800 flex items-center">
-              <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
-              积分排行榜
-            </h1>
-          </div>
-        </div>
-      </nav>
+      <HeaderBar title="积分排行榜" />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">

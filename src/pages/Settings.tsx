@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useUserStore } from '../stores/userStore';
 import { toast } from 'sonner';
 import Avatar from '../components/Avatar';
+import HeaderBar from '../components/HeaderBar';
 
 const Settings: React.FC = () => {
   const { user } = useAuthStore();
@@ -112,34 +113,10 @@ const Settings: React.FC = () => {
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col">
-        {/* 头部导航 */}
-        <header className="p-4 md:p-6">
-          {/* 移动端导航 */}
-          <div className="flex lg:hidden items-center justify-between max-w-4xl mx-auto">
-            <Link
-              to="/"
-              className="text-gray-700 hover:text-pink-600 transition-colors group"
-            >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            </Link>
-            <div className="flex items-center space-x-2">
-              <SettingsIcon className="w-6 h-6 text-pink-600" />
-              <h1 className="text-xl font-bold text-gray-800">设置</h1>
-            </div>
-            <div className="w-5"></div>
-          </div>
-          
-          {/* 桌面端导航 */}
-          <div className="hidden lg:flex items-center justify-center max-w-4xl mx-auto">
-            <div className="flex items-center space-x-2">
-              <SettingsIcon className="w-6 h-6 text-pink-600" />
-              <h1 className="text-xl font-bold text-gray-800">设置</h1>
-            </div>
-          </div>
-        </header>
+        <HeaderBar title="设置" />
 
-        {/* 主要内容 */}
-        <main className="flex-1 p-4 md:p-6">
+        {/* 主要内容区域 */}
+        <div className="flex-1 p-4 md:p-6">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/50 overflow-hidden">
               {/* 设置项目 */}
@@ -321,7 +298,7 @@ const Settings: React.FC = () => {
               </div>
             </div>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

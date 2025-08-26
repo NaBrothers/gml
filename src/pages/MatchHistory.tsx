@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, Clock, Trophy, Users, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { GameDetail } from '../../shared/types';
 import { gamesApi } from '../lib/api';
+import HeaderBar from '../components/HeaderBar';
 
 interface MatchHistoryState {
   games: GameDetail[];
@@ -156,17 +157,7 @@ const MatchHistory: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50">
-      {/* 导航栏 */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-pink-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-center">
-            <h1 className="text-xl font-bold text-gray-800 flex items-center">
-              <Clock className="w-5 h-5 mr-2 text-blue-500" />
-              比赛记录
-            </h1>
-          </div>
-        </div>
-      </nav>
+      <HeaderBar title="比赛记录" />
 
       <div className="container mx-auto px-4 py-8">
 

@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 import { User, UserRole } from '../../shared/types';
 import { useNavigate } from 'react-router-dom';
 import Avatar from '../components/Avatar';
+import HeaderBar from '../components/HeaderBar';
 
 // 段位配置数据（与后端保持一致）
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
@@ -237,24 +238,13 @@ const UserManagement: React.FC = () => {
     );
   }
 
+  const handleBackClick = () => {
+    navigate('/admin');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50">
-      {/* 导航栏 */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-pink-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate('/admin')}
-              className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              返回管理
-            </button>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800">用户管理</h1>
-            <div className="w-16"></div> {/* 占位符保持居中 */}
-          </div>
-        </div>
-      </nav>
+      <HeaderBar title="用户管理" onBackClick={handleBackClick} />
 
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* 页面标题卡片 */}

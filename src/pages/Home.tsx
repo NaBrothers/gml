@@ -126,7 +126,7 @@ const Home: React.FC = () => {
               <img 
                 src="/image.png" 
                 alt="Game Character" 
-                className="relative z-10 max-h-[80vh] w-auto object-contain drop-shadow-2xl transform hover:scale-105 transition-transform duration-500 cursor-pointer"
+                className="relative z-10 max-h-[80vh] w-auto object-contain drop-shadow-2xl transform transition-transform duration-500 cursor-pointer scale-x-[-1] hover:scale-x-[-1.05] hover:scale-y-105"
                 style={{
                   filter: 'drop-shadow(0 0 30px rgba(255, 255, 255, 0.3)) drop-shadow(0 0 60px rgba(255, 182, 193, 0.4))'
                 }}
@@ -152,7 +152,7 @@ const Home: React.FC = () => {
         </div>
 
         {/* 移动端人像（小尺寸背景装饰） */}
-        <div className="lg:hidden absolute bottom-0 right-4 transform opacity-100 z-0">
+        <div className="lg:hidden absolute bottom-0 right-4 transform opacity-100 z-10">
           <div className="relative">
             <img 
               src="/image.png" 
@@ -167,7 +167,7 @@ const Home: React.FC = () => {
               onClose={handleQuoteClose}
               position="top"
               className="animate-bounce"
-              showCloseButton={true}
+              showCloseButton={false}
               autoHide={true}
             />
           </div>

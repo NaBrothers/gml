@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Users, Settings, Bell, Shield, ArrowLeft, Database, BarChart3 } from 'lucide-react';
 import { UserRole } from '../../shared/types';
+import HeaderBar from '../components/HeaderBar';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -71,22 +72,7 @@ const Admin: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50">
-      {/* 导航栏 */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-pink-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              返回
-            </button>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800">系统管理</h1>
-            <div className="w-16"></div> {/* 占位符保持居中 */}
-          </div>
-        </div>
-      </nav>
+      <HeaderBar title="系统管理" />
 
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* 欢迎区域 */}

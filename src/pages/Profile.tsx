@@ -7,6 +7,7 @@ import PositionChart from '../components/PositionChart';
 import Avatar from '../components/Avatar';
 import { useAuthStore } from '../stores/authStore';
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
+import HeaderBar from '../components/HeaderBar';
 
 // 更新接口定义以适配新的数据结构
 interface UserHistory {
@@ -187,14 +188,7 @@ const Profile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50">
-      {/* 导航栏 */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-pink-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-center">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800">用户详情</h1>
-          </div>
-        </div>
-      </nav>
+      <HeaderBar title="用户详情" />
 
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* 用户信息卡片 */}

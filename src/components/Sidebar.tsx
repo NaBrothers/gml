@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Trophy, Users, GamepadIcon, Crown, Sword, LogIn, User, Settings, LogOut, ChevronDown, History, Menu, X, Shield } from 'lucide-react';
 import Avatar from './Avatar';
@@ -7,10 +7,14 @@ import { UserRole } from '../../shared/types';
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated, user, logout } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // 检查是否在主页
+  const isHomePage = location.pathname === '/';
 
   // 点击外部关闭用户菜单
   useEffect(() => {
@@ -179,13 +183,15 @@ const Sidebar: React.FC = () => {
         </div>
       </div>
       
-      {/* 移动端汉堡菜单按钮 */}
-      <button
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="md:hidden fixed top-4 right-4 z-50 p-3 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full shadow-lg text-white hover:scale-110 transition-all duration-300"
-      >
-        {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+      {/* 移动端汉堡菜单按钮 - 只在主页显示 */}
+      {isHomePage && (
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="md:hidden fixed top-4 right-4 z-50 p-3 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full shadow-lg text-white hover:scale-110 transition-all duration-300"
+        >
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      )}
       
       {/* 移动端全屏菜单 */}
       {isMobileMenuOpen && (
