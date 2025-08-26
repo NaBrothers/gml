@@ -4,8 +4,6 @@ import { useAuthStore } from '../stores/authStore';
 import { useUserStore } from '../stores/userStore';
 import { Trophy, LogIn, Star, Zap, X } from 'lucide-react';
 
-// 段位配置数据（与后端保持一致）
-import { getRankNameByLevel } from '../utils/rankConfigs';
 import QuoteBubble from '../components/QuoteBubble';
 
 const Home: React.FC = () => {

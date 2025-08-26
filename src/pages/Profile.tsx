@@ -6,7 +6,6 @@ import PointsChart from '../components/PointsChart';
 import PositionChart from '../components/PositionChart';
 import Avatar from '../components/Avatar';
 import { useAuthStore } from '../stores/authStore';
-import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
 
 // 更新接口定义以适配新的数据结构
 interface UserHistory {

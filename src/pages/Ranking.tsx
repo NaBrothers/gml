@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useUserStore } from '../stores/userStore';
 import { rankingApi } from '../lib/api';
 import { Trophy, Medal, Crown, TrendingUp, Users, BarChart3, ArrowLeft } from 'lucide-react';
-import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
 import Avatar from '../components/Avatar';
 
 // 段位配置数据（与后端保持一致）

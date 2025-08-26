@@ -6,7 +6,6 @@ import { useGameStore, validateScores, getScoreDifference } from '../stores/game
 import { User } from '../../shared/types';
 import { Calculator, Users, Trophy, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
 
 // 段位配置数据（与后端保持一致）
 

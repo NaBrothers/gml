@@ -297,7 +297,7 @@ router.get('/:id/history', async (req: Request, res: Response) => {
       totalGames: userStats.gamesPlayed,
       wins: userStats.wins,
       averagePosition: userStats.averagePosition.toString(),
-      totalPointsChange: userStats.totalPoints - 1800, // 总积分变化 = 当前积分 - 初始积分
+      totalPointsChange: userStats.totalPoints, // 总积分变化 = 当前积分 - 初始积分
       currentPoints: userStats.totalPoints,
       currentRank: userStats.rankLevel
     };

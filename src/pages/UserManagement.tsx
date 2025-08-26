@@ -6,9 +6,6 @@ import { User, UserRole } from '../../shared/types';
 import { useNavigate } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 
-// 段位配置数据（与后端保持一致）
-import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
-
 interface UserWithActions {
   id: string;
   username: string;
