@@ -122,23 +122,20 @@ export interface PointHistory {
 // 段位配置类型
 export interface RankConfig {
   id: number;
-  rankName: string;
-  minPoints: number;
-  maxPoints: number;
-  promotionBonus: number;
-  demotionPenalty: number;
-  rankOrder: number;
-  // 新增字段支持大段位+小段位
+  rankName: string; // 段位名称
+  minPoints: number; // 段位起始分
+  maxPoints: number; // 段位最高分
+  promotionBonus: number; // 段位奖励分
+  demotionPenalty: number; // 段位惩罚分
+  rankOrder: number; // 段位等级
   majorRank: string; // 大段位名称
-  minorRankType: 'dan' | 'star' | 'none'; // 小段位类型：段/星/无
-  minorRankRange: [number, number]; // 小段位范围 [最小值, 最大值]
+  allowDropPoints: boolean; // 是否允许掉分
 }
 
 // 段位信息
 export interface RankInfo {
   majorRank: string; // 大段位
   minorRank: number; // 小段位数值
-  minorRankType: 'dan' | 'star' | 'none'; // 小段位类型
   displayName: string; // 完整显示名称
   rankConfig: RankConfig; // 段位配置
 }
