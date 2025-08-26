@@ -66,33 +66,107 @@ function generateId(): string {
 
 // 段位配置数据（简化版本）
 const RANK_CONFIGS: RankConfig[] = [
-  // 新人
-  { id: 1, rankName: '新人1', minPoints: 0, maxPoints: 19, promotionBonus: 0, demotionPenalty: 0, rankOrder: 1, majorRank: '新人', minorRankType: 'dan', minorRankRange: [1, 3] },
-  { id: 2, rankName: '新人2', minPoints: 20, maxPoints: 39, promotionBonus: 0, demotionPenalty: 0, rankOrder: 2, majorRank: '新人', minorRankType: 'dan', minorRankRange: [1, 3] },
-  { id: 3, rankName: '新人3', minPoints: 40, maxPoints: 59, promotionBonus: 0, demotionPenalty: 0, rankOrder: 3, majorRank: '新人', minorRankType: 'dan', minorRankRange: [1, 3] },
-  
-  // 9级到1级
-  { id: 4, rankName: '9级', minPoints: 60, maxPoints: 79, promotionBonus: 0, demotionPenalty: 0, rankOrder: 4, majorRank: '9级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 5, rankName: '8级', minPoints: 80, maxPoints: 99, promotionBonus: 0, demotionPenalty: 0, rankOrder: 5, majorRank: '8级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 6, rankName: '7级', minPoints: 100, maxPoints: 119, promotionBonus: 0, demotionPenalty: 0, rankOrder: 6, majorRank: '7级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 7, rankName: '6级', minPoints: 120, maxPoints: 139, promotionBonus: 0, demotionPenalty: 0, rankOrder: 7, majorRank: '6级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 8, rankName: '5级', minPoints: 140, maxPoints: 159, promotionBonus: 0, demotionPenalty: 0, rankOrder: 8, majorRank: '5级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 9, rankName: '4级', minPoints: 160, maxPoints: 179, promotionBonus: 0, demotionPenalty: 0, rankOrder: 9, majorRank: '4级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 10, rankName: '3级', minPoints: 180, maxPoints: 199, promotionBonus: 0, demotionPenalty: 0, rankOrder: 10, majorRank: '3级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 11, rankName: '2级', minPoints: 200, maxPoints: 219, promotionBonus: 0, demotionPenalty: 0, rankOrder: 11, majorRank: '2级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 12, rankName: '1级', minPoints: 220, maxPoints: 239, promotionBonus: 0, demotionPenalty: 0, rankOrder: 12, majorRank: '1级', minorRankType: 'none', minorRankRange: [0, 0] },
-  
-  // 初段到十段
-  { id: 13, rankName: '初段', minPoints: 240, maxPoints: 399, promotionBonus: 0, demotionPenalty: 0, rankOrder: 13, majorRank: '初段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 14, rankName: '二段', minPoints: 400, maxPoints: 799, promotionBonus: 0, demotionPenalty: 0, rankOrder: 14, majorRank: '二段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 15, rankName: '三段', minPoints: 800, maxPoints: 1199, promotionBonus: 0, demotionPenalty: 0, rankOrder: 15, majorRank: '三段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 16, rankName: '四段', minPoints: 1200, maxPoints: 1599, promotionBonus: 0, demotionPenalty: 0, rankOrder: 16, majorRank: '四段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 17, rankName: '五段', minPoints: 1600, maxPoints: 1999, promotionBonus: 0, demotionPenalty: 0, rankOrder: 17, majorRank: '五段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 18, rankName: '六段', minPoints: 2000, maxPoints: 2399, promotionBonus: 0, demotionPenalty: 0, rankOrder: 18, majorRank: '六段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 19, rankName: '七段', minPoints: 2400, maxPoints: 2799, promotionBonus: 0, demotionPenalty: 0, rankOrder: 19, majorRank: '七段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 20, rankName: '八段', minPoints: 2800, maxPoints: 3199, promotionBonus: 0, demotionPenalty: 0, rankOrder: 20, majorRank: '八段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 21, rankName: '九段', minPoints: 3200, maxPoints: 3599, promotionBonus: 0, demotionPenalty: 0, rankOrder: 21, majorRank: '九段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 22, rankName: '十段', minPoints: 3600, maxPoints: 9999999, promotionBonus: 0, demotionPenalty: 0, rankOrder: 22, majorRank: '十段', minorRankType: 'none', minorRankRange: [0, 0] }
+  { "id": 1,  "rankName": "雀之气一段", "minPoints": 0, "maxPoints": 9,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 1,  "majorRank": "雀之气", "allowDropPoints": false },
+  { "id": 2,  "rankName": "雀之气二段", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 2,  "majorRank": "雀之气", "allowDropPoints": false },
+  { "id": 3,  "rankName": "雀之气三段", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 3,  "majorRank": "雀之气", "allowDropPoints": false },
+  { "id": 4,  "rankName": "雀之气四段", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 4,  "majorRank": "雀之气", "allowDropPoints": true },
+  { "id": 5,  "rankName": "雀之气五段", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 5,  "majorRank": "雀之气", "allowDropPoints": true },
+  { "id": 6,  "rankName": "雀之气六段", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 6,  "majorRank": "雀之气", "allowDropPoints": true },
+  { "id": 7,  "rankName": "雀之气七段", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 7,  "majorRank": "雀之气", "allowDropPoints": true },
+  { "id": 8,  "rankName": "雀之气八段", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 8,  "majorRank": "雀之气", "allowDropPoints": true },
+  { "id": 9,  "rankName": "雀之气九段", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 9,  "majorRank": "雀之气", "allowDropPoints": true },
+
+  { "id": 10, "rankName": "一星雀者", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 10, "majorRank": "雀者",   "allowDropPoints": true },
+  { "id": 11, "rankName": "二星雀者", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 11, "majorRank": "雀者",   "allowDropPoints": true },
+  { "id": 12, "rankName": "三星雀者", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 12, "majorRank": "雀者",   "allowDropPoints": true },
+  { "id": 13, "rankName": "四星雀者", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 13, "majorRank": "雀者",   "allowDropPoints": true },
+  { "id": 14, "rankName": "五星雀者", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 14, "majorRank": "雀者",   "allowDropPoints": true },
+  { "id": 15, "rankName": "六星雀者", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 15, "majorRank": "雀者",   "allowDropPoints": true },
+  { "id": 16, "rankName": "七星雀者", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 16, "majorRank": "雀者",   "allowDropPoints": true },
+  { "id": 17, "rankName": "八星雀者", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 17, "majorRank": "雀者",   "allowDropPoints": true },
+  { "id": 18, "rankName": "九星雀者", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 18, "majorRank": "雀者",   "allowDropPoints": true },
+
+  { "id": 19, "rankName": "一星雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 19, "majorRank": "雀师",   "allowDropPoints": true },
+  { "id": 20, "rankName": "二星雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 20, "majorRank": "雀师",   "allowDropPoints": true },
+  { "id": 21, "rankName": "三星雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 21, "majorRank": "雀师",   "allowDropPoints": true },
+  { "id": 22, "rankName": "四星雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 22, "majorRank": "雀师",   "allowDropPoints": true },
+  { "id": 23, "rankName": "五星雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 23, "majorRank": "雀师",   "allowDropPoints": true },
+  { "id": 24, "rankName": "六星雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 24, "majorRank": "雀师",   "allowDropPoints": true },
+  { "id": 25, "rankName": "七星雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 25, "majorRank": "雀师",   "allowDropPoints": true },
+  { "id": 26, "rankName": "八星雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 26, "majorRank": "雀师",   "allowDropPoints": true },
+  { "id": 27, "rankName": "九星雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 27, "majorRank": "雀师",   "allowDropPoints": true },
+
+  { "id": 28, "rankName": "一星大雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 28, "majorRank": "大雀师", "allowDropPoints": true },
+  { "id": 29, "rankName": "二星大雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 29, "majorRank": "大雀师", "allowDropPoints": true },
+  { "id": 30, "rankName": "三星大雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 30, "majorRank": "大雀师", "allowDropPoints": true },
+  { "id": 31, "rankName": "四星大雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 31, "majorRank": "大雀师", "allowDropPoints": true },
+  { "id": 32, "rankName": "五星大雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 32, "majorRank": "大雀师", "allowDropPoints": true },
+  { "id": 33, "rankName": "六星大雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 33, "majorRank": "大雀师", "allowDropPoints": true },
+  { "id": 34, "rankName": "七星大雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 34, "majorRank": "大雀师", "allowDropPoints": true },
+  { "id": 35, "rankName": "八星大雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 35, "majorRank": "大雀师", "allowDropPoints": true },
+  { "id": 36, "rankName": "九星大雀师", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 36, "majorRank": "大雀师", "allowDropPoints": true },
+
+  { "id": 37, "rankName": "一星雀灵", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 37, "majorRank": "雀灵",   "allowDropPoints": true },
+  { "id": 38, "rankName": "二星雀灵", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 38, "majorRank": "雀灵",   "allowDropPoints": true },
+  { "id": 39, "rankName": "三星雀灵", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 39, "majorRank": "雀灵",   "allowDropPoints": true },
+  { "id": 40, "rankName": "四星雀灵", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 40, "majorRank": "雀灵",   "allowDropPoints": true },
+  { "id": 41, "rankName": "五星雀灵", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 41, "majorRank": "雀灵",   "allowDropPoints": true },
+  { "id": 42, "rankName": "六星雀灵", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 42, "majorRank": "雀灵",   "allowDropPoints": true },
+  { "id": 43, "rankName": "七星雀灵", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 43, "majorRank": "雀灵",   "allowDropPoints": true },
+  { "id": 44, "rankName": "八星雀灵", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 44, "majorRank": "雀灵",   "allowDropPoints": true },
+  { "id": 45, "rankName": "九星雀灵", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 45, "majorRank": "雀灵",   "allowDropPoints": true },
+
+  { "id": 46, "rankName": "一星雀王", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 46, "majorRank": "雀王",   "allowDropPoints": true },
+  { "id": 47, "rankName": "二星雀王", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 47, "majorRank": "雀王",   "allowDropPoints": true },
+  { "id": 48, "rankName": "三星雀王", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 48, "majorRank": "雀王",   "allowDropPoints": true },
+  { "id": 49, "rankName": "四星雀王", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 49, "majorRank": "雀王",   "allowDropPoints": true },
+  { "id": 50, "rankName": "五星雀王", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 50, "majorRank": "雀王",   "allowDropPoints": true },
+  { "id": 51, "rankName": "六星雀王", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 51, "majorRank": "雀王",   "allowDropPoints": true },
+  { "id": 52, "rankName": "七星雀王", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 52, "majorRank": "雀王",   "allowDropPoints": true },
+  { "id": 53, "rankName": "八星雀王", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 53, "majorRank": "雀王",   "allowDropPoints": true },
+  { "id": 54, "rankName": "九星雀王", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 54, "majorRank": "雀王",   "allowDropPoints": true },
+
+  { "id": 55, "rankName": "一星雀皇", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 55, "majorRank": "雀皇",   "allowDropPoints": true },
+  { "id": 56, "rankName": "二星雀皇", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 56, "majorRank": "雀皇",   "allowDropPoints": true },
+  { "id": 57, "rankName": "三星雀皇", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 57, "majorRank": "雀皇",   "allowDropPoints": true },
+  { "id": 58, "rankName": "四星雀皇", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 58, "majorRank": "雀皇",   "allowDropPoints": true },
+  { "id": 59, "rankName": "五星雀皇", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 59, "majorRank": "雀皇",   "allowDropPoints": true },
+  { "id": 60, "rankName": "六星雀皇", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 60, "majorRank": "雀皇",   "allowDropPoints": true },
+  { "id": 61, "rankName": "七星雀皇", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 61, "majorRank": "雀皇",   "allowDropPoints": true },
+  { "id": 62, "rankName": "八星雀皇", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 62, "majorRank": "雀皇",   "allowDropPoints": true },
+  { "id": 63, "rankName": "九星雀皇", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 63, "majorRank": "雀皇",   "allowDropPoints": true },
+
+  { "id": 64, "rankName": "一星雀宗", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 64, "majorRank": "雀宗",   "allowDropPoints": true },
+  { "id": 65, "rankName": "二星雀宗", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 65, "majorRank": "雀宗",   "allowDropPoints": true },
+  { "id": 66, "rankName": "三星雀宗", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 66, "majorRank": "雀宗",   "allowDropPoints": true },
+  { "id": 67, "rankName": "四星雀宗", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 67, "majorRank": "雀宗",   "allowDropPoints": true },
+  { "id": 68, "rankName": "五星雀宗", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 68, "majorRank": "雀宗",   "allowDropPoints": true },
+  { "id": 69, "rankName": "六星雀宗", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 69, "majorRank": "雀宗",   "allowDropPoints": true },
+  { "id": 70, "rankName": "七星雀宗", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 70, "majorRank": "雀宗",   "allowDropPoints": true },
+  { "id": 71, "rankName": "八星雀宗", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 71, "majorRank": "雀宗",   "allowDropPoints": true },
+  { "id": 72, "rankName": "九星雀宗", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 72, "majorRank": "雀宗",   "allowDropPoints": true },
+
+  { "id": 73, "rankName": "一星雀尊", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 73, "majorRank": "雀尊",   "allowDropPoints": true },
+  { "id": 74, "rankName": "二星雀尊", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 74, "majorRank": "雀尊",   "allowDropPoints": true },
+  { "id": 75, "rankName": "三星雀尊", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 75, "majorRank": "雀尊",   "allowDropPoints": true },
+  { "id": 76, "rankName": "四星雀尊", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 76, "majorRank": "雀尊",   "allowDropPoints": true },
+  { "id": 77, "rankName": "五星雀尊", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 77, "majorRank": "雀尊",   "allowDropPoints": true },
+  { "id": 78, "rankName": "六星雀尊", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 78, "majorRank": "雀尊",   "allowDropPoints": true },
+  { "id": 79, "rankName": "七星雀尊", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 79, "majorRank": "雀尊",   "allowDropPoints": true },
+  { "id": 80, "rankName": "八星雀尊", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 80, "majorRank": "雀尊",   "allowDropPoints": true },
+  { "id": 81, "rankName": "九星雀尊", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 81, "majorRank": "雀尊",   "allowDropPoints": true },
+
+  { "id": 82, "rankName": "一星雀圣", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 82, "majorRank": "雀圣",   "allowDropPoints": true },
+  { "id": 83, "rankName": "二星雀圣", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 83, "majorRank": "雀圣",   "allowDropPoints": true },
+  { "id": 84, "rankName": "三星雀圣", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 84, "majorRank": "雀圣",   "allowDropPoints": true },
+  { "id": 85, "rankName": "四星雀圣", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 85, "majorRank": "雀圣",   "allowDropPoints": true },
+  { "id": 86, "rankName": "五星雀圣", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 86, "majorRank": "雀圣",   "allowDropPoints": true },
+  { "id": 87, "rankName": "六星雀圣", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 87, "majorRank": "雀圣",   "allowDropPoints": true },
+  { "id": 88, "rankName": "七星雀圣", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 88, "majorRank": "雀圣",   "allowDropPoints": true },
+  { "id": 89, "rankName": "八星雀圣", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 89, "majorRank": "雀圣",   "allowDropPoints": true },
+  { "id": 90, "rankName": "九星雀圣", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 90, "majorRank": "雀圣",   "allowDropPoints": true },
+
+  { "id": 91, "rankName": "雀帝", "minPoints": 0, "maxPoints": 0,  "promotionBonus": 0, "demotionPenalty": 0, "rankOrder": 91, "majorRank": "雀帝",   "allowDropPoints": true }
 ];
 
 // 解析段位信息
@@ -104,7 +178,6 @@ export function parseRankInfo(points: number): RankInfo {
   return {
     majorRank: rankConfig.majorRank,
     minorRank: 0, // 简化版本暂不使用小段位
-    minorRankType: rankConfig.minorRankType,
     displayName: rankConfig.rankName,
     rankConfig
   };
@@ -158,7 +231,7 @@ export function calculateUserStats(userId: string): UserStats {
   if (userGames.length === 0) {
     return {
       totalPoints: 1800, // 初始积分
-      rankLevel: 16,
+      rankLevel: 19,
       rankPoints: 0,
       gamesPlayed: 0,
       wins: 0,
