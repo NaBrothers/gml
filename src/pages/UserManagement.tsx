@@ -6,6 +6,7 @@ import { User, UserRole } from '../../shared/types';
 import { useNavigate } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 import HeaderBar from '../components/HeaderBar';
+import ScrollToTop from '../components/ScrollToTop';
 
 // 段位配置数据（与后端保持一致）
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
@@ -486,8 +487,10 @@ const UserManagement: React.FC = () => {
             <p className="text-gray-500 text-lg">暂无用户数据</p>
           </div>
         )}
+        </div>
+       
+       <ScrollToTop />
       </div>
-    </div>
   );
 };
 

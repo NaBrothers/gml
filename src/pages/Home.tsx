@@ -7,6 +7,7 @@ import { Trophy, LogIn, Star, Zap, X } from 'lucide-react';
 // 段位配置数据（与后端保持一致）
 import { getRankNameByLevel } from '../utils/rankConfigs';
 import QuoteBubble from '../components/QuoteBubble';
+import SakuraRain from '../components/SakuraRain';
 
 const Home: React.FC = () => {
   const { isAuthenticated } = useAuthStore();
@@ -68,16 +69,23 @@ const Home: React.FC = () => {
         }}
       />
       
+      {/* 樱花雨效果 */}
+      <SakuraRain petalCount={12} />
+      
       {/* 渐变遮罩层 */}
       <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-purple-600/30 to-blue-600/40" />
       
-      {/* 动态装饰元素 */}
+      {/* 优化的动态装饰元素 */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-10 left-10 w-16 h-16 bg-yellow-400 rounded-full blur-lg animate-pulse opacity-60" />
-        <div className="absolute top-32 right-20 w-12 h-12 bg-pink-400 rounded-full blur-md animate-bounce opacity-50" style={{animationDelay: '1s'}} />
-        <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-purple-400 rounded-full blur-xl animate-pulse opacity-40" style={{animationDelay: '2s'}} />
-        <div className="absolute bottom-40 right-1/3 w-8 h-8 bg-blue-400 rounded-full blur-sm animate-bounce opacity-70" style={{animationDelay: '0.5s'}} />
-        <div className="absolute top-1/2 left-1/6 w-6 h-6 bg-orange-400 rounded-full blur-sm animate-pulse opacity-50" style={{animationDelay: '3s'}} />
+        <div className="absolute top-10 left-10 w-16 h-16 bg-yellow-400 rounded-full breathing-light" />
+        <div className="absolute top-32 right-20 w-12 h-12 bg-pink-400 rounded-full breathing-light-fast" style={{animationDelay: '1s'}} />
+        <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-purple-400 rounded-full breathing-light-slow" style={{animationDelay: '2s'}} />
+        <div className="absolute bottom-40 right-1/3 w-8 h-8 bg-blue-400 rounded-full starlight" style={{animationDelay: '0.5s'}} />
+        <div className="absolute top-1/2 left-1/6 w-6 h-6 bg-orange-400 rounded-full breathing-light-fast" style={{animationDelay: '3s'}} />
+        
+        {/* 新增的渐变呼吸光晕 */}
+        <div className="absolute top-1/4 right-1/4 w-24 h-24 gradient-breathing" style={{animationDelay: '1.5s'}} />
+        <div className="absolute bottom-1/3 left-1/3 w-18 h-18 gradient-breathing" style={{animationDelay: '4s'}} />
       </div>
 
       {/* 主要内容 */}
@@ -221,10 +229,10 @@ const Home: React.FC = () => {
       {/* 移动端排行榜浮动按钮 */}
       {rankings.length > 0 && (
         <div className="md:hidden">
-          {/* 浮动按钮 */}
+          {/* 浮动按钮 - 当移动端菜单打开时隐藏 */}
           <button
             onClick={() => setIsMobileRankingOpen(true)}
-            className="fixed bottom-6 left-6 w-14 h-14 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 rounded-full shadow-2xl border-2 border-yellow-400/50 z-40 flex items-center justify-center transform hover:scale-110 transition-all duration-300"
+            className="fixed bottom-6 left-6 w-14 h-14 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 rounded-full shadow-2xl border-2 border-yellow-400/50 z-30 flex items-center justify-center transform hover:scale-110 transition-all duration-300"
             style={{
               boxShadow: '0 0 20px rgba(255, 215, 0, 0.4), 0 0 40px rgba(147, 51, 234, 0.3)'
             }}

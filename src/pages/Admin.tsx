@@ -28,18 +28,18 @@ const Admin: React.FC = () => {
       title: '用户管理',
       description: '管理系统用户、权限分配',
       icon: Users,
-      path: '/admin/users',
+      path: '/users',
       color: 'from-blue-500 to-blue-600',
       available: true
     },
     {
       id: 'config',
       title: '配置中心',
-      description: '系统配置、参数设置',
+      description: '系统配置、参数设置、段位管理',
       icon: Settings,
       path: '/admin/config',
       color: 'from-green-500 to-green-600',
-      available: false
+      available: true
     },
     {
       id: 'notifications',

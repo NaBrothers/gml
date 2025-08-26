@@ -303,6 +303,7 @@ router.get('/:id/history', async (req: Request, res: Response) => {
     };
     
     // 准备图表数据（积分和段位变化）
+    // 注意：gameHistories已经按时间降序排列（最新在前），图表需要按时间升序（最旧在前）
     const chartData = {
       pointsHistory: pointHistories.map(ph => ({
         date: ph.gameDate,
@@ -311,13 +312,13 @@ router.get('/:id/history', async (req: Request, res: Response) => {
         pointsChange: ph.pointsChange,
         rankBefore: ph.rankBefore,
         rankAfter: ph.rankAfter
-      })).reverse(), // 按时间正序排列用于图表
+      })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()), // 按时间升序排列用于图表
       gameResults: gameHistories.map(gh => ({
         date: gh.game?.createdAt,
         position: gh.gamePlayer.position,
         pointsChange: gh.pointHistory?.pointsChange || 0,
         finalScore: gh.gamePlayer.finalScore
-      })).reverse()
+      })).sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime()) // 按时间升序排列用于图表
     };
 
     const response: ApiResponse<{

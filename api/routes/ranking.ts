@@ -42,7 +42,7 @@ router.get('/', async (req: Request, res: Response) => {
     const paginatedUsers = sortedUsers.slice(offsetNum, offsetNum + limitNum);
 
     // 获取所有大段位列表
-    const majorRanks = ['新人', '9级', '8级', '7级', '6级', '5级', '4级', '3级', '2级', '1级', '初段', '二段', '三段', '四段', '五段', '六段', '七段', '八段', '九段', '十段'];
+    const majorRanks = ['雀之气', '雀者', '雀师', '大雀师', '雀灵', '雀王', '雀皇', '雀宗', '雀尊', '雀圣', '雀帝'];
 
     const response: ApiResponse<{
       rankings: RankingUser[];

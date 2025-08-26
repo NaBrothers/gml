@@ -55,14 +55,14 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-blue-50 to-purple-100">
+    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-blue-50 to-purple-100 flex flex-col">
       <HeaderBar 
         title={isLogin ? '登录' : '注册'} 
         showBackButton={true}
         onBackClick={handleBackToHome}
       />
       
-      <div className="flex items-center justify-center p-4 pt-8">
+      <div className="flex-1 flex items-center justify-center p-4 relative">
         {/* 背景装饰 */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>

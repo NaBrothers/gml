@@ -227,6 +227,53 @@ body {
   .title-responsive {
     font-size: clamp(2rem, 8vw, 4rem);
   }
+  
+  /* 移动端动画优化 */
+  .breathing-light,
+  .breathing-light-slow,
+  .breathing-light-fast,
+  .starlight,
+  .gradient-breathing {
+    animation-duration: 6s; /* 统一放慢动画速度 */
+    filter: blur(4px); /* 减少模糊效果 */
+  }
+  
+  .sakura-fall {
+    animation-duration: 15s; /* 樱花雨在移动端更慢 */
+  }
+  
+  /* 减少移动端的动画复杂度 */
+  .sakura-petal {
+    filter: none; /* 移除阴影效果 */
+  }
+}
+
+/* 低性能设备优化 */
+@media (max-width: 480px) {
+  .breathing-light,
+  .breathing-light-slow,
+  .breathing-light-fast {
+    animation: none; /* 在小屏设备上禁用复杂动画 */
+    opacity: 0.3;
+  }
+  
+  .starlight {
+    animation: simple-pulse 4s ease-in-out infinite;
+  }
+  
+  .gradient-breathing {
+    animation: none;
+    background: radial-gradient(circle, rgba(255, 183, 197, 0.2) 0%, transparent 70%);
+  }
+}
+
+@keyframes simple-pulse {
+  0%, 100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 /* 加载动画 */
@@ -281,6 +328,144 @@ body {
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+/* 樱花雨动画 */
+.sakura-fall {
+  animation-name: sakura-fall, sakura-sway, sakura-rotate;
+  animation-timing-function: linear, ease-in-out, linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes sakura-fall {
+  0% {
+    transform: translateY(-10vh);
+  }
+  100% {
+    transform: translateY(110vh);
+  }
+}
+
+@keyframes sakura-sway {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(20px);
+  }
+  75% {
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes sakura-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.sakura-petal {
+  filter: drop-shadow(0 2px 4px rgba(255, 183, 197, 0.3));
+  transition: all 0.3s ease;
+}
+
+/* 优化的呼吸光点动画 */
+.breathing-light {
+  animation: breathing-glow 4s ease-in-out infinite;
+}
+
+@keyframes breathing-glow {
+  0%, 100% {
+    transform: scale(0.8);
+    opacity: 0.4;
+    filter: blur(8px);
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+    filter: blur(12px);
+  }
+}
+
+.breathing-light-slow {
+  animation: breathing-glow-slow 6s ease-in-out infinite;
+}
+
+@keyframes breathing-glow-slow {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.3;
+    filter: blur(10px) hue-rotate(0deg);
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+    filter: blur(15px) hue-rotate(30deg);
+  }
+}
+
+.breathing-light-fast {
+  animation: breathing-glow-fast 2.5s ease-in-out infinite;
+}
+
+@keyframes breathing-glow-fast {
+  0%, 100% {
+    transform: scale(0.7);
+    opacity: 0.5;
+    filter: blur(6px);
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+    filter: blur(10px);
+  }
+}
+
+/* 星光闪烁效果 */
+.starlight {
+  animation: starlight-twinkle 3s ease-in-out infinite;
+}
+
+@keyframes starlight-twinkle {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.5) rotate(0deg);
+  }
+  25% {
+    opacity: 0.8;
+    transform: scale(1) rotate(90deg);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7) rotate(180deg);
+  }
+  75% {
+    opacity: 0.9;
+    transform: scale(1.2) rotate(270deg);
+  }
+}
+
+/* 渐变色呼吸光晕 */
+.gradient-breathing {
+  animation: gradient-breathing 5s ease-in-out infinite;
+}
+
+@keyframes gradient-breathing {
+  0%, 100% {
+    background: radial-gradient(circle, rgba(255, 183, 197, 0.4) 0%, transparent 70%);
+    transform: scale(0.8);
+  }
+  33% {
+    background: radial-gradient(circle, rgba(135, 206, 235, 0.5) 0%, transparent 70%);
+    transform: scale(1.1);
+  }
+  66% {
+    background: radial-gradient(circle, rgba(177, 156, 217, 0.4) 0%, transparent 70%);
+    transform: scale(1.3);
   }
 }
 

@@ -6,6 +6,7 @@ import { Trophy, Medal, Crown, TrendingUp, Users, BarChart3, ArrowLeft } from 'l
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
 import Avatar from '../components/Avatar';
 import HeaderBar from '../components/HeaderBar';
+import ScrollToTop from '../components/ScrollToTop';
 
 // 段位配置数据（与后端保持一致）
 
@@ -36,14 +37,14 @@ const Ranking: React.FC = () => {
       if (response.success && response.data) {
         // 使用API返回的数据结构
         const adaptedStats: Stats = {
-          rankStats: response.data.rankStats || {},
+          rankStats: (response.data as any).majorRankStats || {}, // 使用majorRankStats按大段位统计
           totalUsers: response.data.totalUsers,
           totalGames: response.data.totalGames,
           averagePoints: response.data.averagePoints
         };
         setStats(adaptedStats);
-        // 从rankStats中提取段位信息
-        setMajorRanks(Object.keys(response.data.rankStats || {}));
+        // 从majorRankStats中提取大段位信息
+        setMajorRanks(Object.keys((response.data as any).majorRankStats || {}));
       }
     } catch (error) {
       console.error('获取统计数据失败:', error);
@@ -429,6 +430,8 @@ const Ranking: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      <ScrollToTop />
     </div>
   );
 };

@@ -8,6 +8,7 @@ import Avatar from '../components/Avatar';
 import { useAuthStore } from '../stores/authStore';
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
 import HeaderBar from '../components/HeaderBar';
+import ScrollToTop from '../components/ScrollToTop';
 
 // 更新接口定义以适配新的数据结构
 interface UserHistory {
@@ -383,6 +384,8 @@ const Profile: React.FC = () => {
           )}
         </div>
       </div>
+      
+      <ScrollToTop />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Calendar, Clock, Trophy, Users, ChevronLeft, ChevronRight, ArrowLeft } 
 import { GameDetail } from '../../shared/types';
 import { gamesApi } from '../lib/api';
 import HeaderBar from '../components/HeaderBar';
+import ScrollToTop from '../components/ScrollToTop';
 
 interface MatchHistoryState {
   games: GameDetail[];
@@ -160,150 +161,204 @@ const MatchHistory: React.FC = () => {
       <HeaderBar title="比赛记录" />
 
       <div className="container mx-auto px-4 py-8">
-
-        {/* 工具栏 */}
-        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 mb-6 border border-white/20 shadow-lg">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <Trophy className="w-5 h-5 text-blue-600" />
-              <span className="text-gray-700 font-medium">
-                共 {state.games.length} 场比赛
-              </span>
-            </div>
-            
-            <button
-              onClick={toggleSort}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors"
-            >
-              <Clock className="w-4 h-4" />
-              <span>按时间排序 ({state.sortOrder === 'desc' ? '最新' : '最旧'})</span>
-            </button>
-          </div>
-        </div>
-
-        {/* 比赛记录列表 */}
-        {currentPageGames.length === 0 ? (
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-12 text-center border border-white/20 shadow-lg">
-            <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">暂无比赛记录</h3>
-            <p className="text-gray-500">还没有进行过任何比赛</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {currentPageGames.map((gameDetail) => {
-              // 按名次排序玩家
-              const sortedPlayers = [...gameDetail.players].sort((a, b) => a.position - b.position);
+        <div className="max-w-4xl mx-auto">
+          {/* 工具栏 */}
+          <div className="bg-white/60 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-4 mb-4 md:mb-6 border border-white/20 shadow-lg">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="flex items-center space-x-2">
+                <Trophy className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
+                <span className="text-sm md:text-base text-gray-700 font-medium">
+                  共 {state.games.length} 场比赛
+                </span>
+              </div>
               
-              return (
-                <div
-                  key={gameDetail.game.id}
-                  className="bg-white/60 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
-                >
-                  {/* 对局信息头部 */}
-                  <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                      <div className="flex items-center space-x-3">
-                        <Users className="w-5 h-5" />
-                        <span className="font-semibold text-lg">{gameDetail.game.gameType}</span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-indigo-100">
-                        <Clock className="w-4 h-4" />
-                        <span className="text-sm">{formatDate(gameDetail.game.createdAt)}</span>
-                      </div>
-                    </div>
-                  </div>
+              <button
+                onClick={toggleSort}
+                className="flex items-center space-x-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors text-sm"
+              >
+                <Clock className="w-4 h-4" />
+                <span>按时间排序 ({state.sortOrder === 'desc' ? '最新' : '最旧'})</span>
+              </button>
+            </div>
+          </div>
 
-                  {/* 玩家结果 */}
-                  <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {sortedPlayers.map((player) => (
-                        <div
-                          key={player.id}
-                          className="bg-white/80 rounded-xl p-4 border border-gray-100 hover:border-indigo-200 transition-all duration-200"
-                        >
-                          {/* 名次标识 */}
-                          <div className="flex items-center justify-between mb-3">
-                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getPositionColor(player.position)}`}>
-                              {getPositionText(player.position)}
-                            </span>
-                            <span className="text-xs text-gray-500">#{player.position}</span>
+          {/* 比赛记录列表 */}
+          {currentPageGames.length === 0 ? (
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl md:rounded-2xl p-8 md:p-12 text-center border border-white/20 shadow-lg">
+              <Trophy className="w-12 h-12 md:w-16 md:h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg md:text-xl font-semibold text-gray-600 mb-2">暂无比赛记录</h3>
+              <p className="text-gray-500">还没有进行过任何比赛</p>
+            </div>
+          ) : (
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl md:rounded-2xl border border-white/20 shadow-lg overflow-hidden">
+              <div className="p-4 md:p-6 border-b border-gray-200">
+                <h2 className="text-lg md:text-xl font-semibold text-gray-800">
+                  比赛记录
+                  <span className="text-sm font-normal text-gray-500 ml-2">
+                    ({state.games.length} 场)
+                  </span>
+                </h2>
+              </div>
+
+              <div className="divide-y divide-gray-200">
+                {currentPageGames.map((gameDetail) => {
+                  // 按名次排序玩家
+                  const sortedPlayers = [...gameDetail.players].sort((a, b) => a.position - b.position);
+                  
+                  return (
+                    <div
+                      key={gameDetail.game.id}
+                      className="p-4 md:p-6 hover:bg-white/50 transition-colors"
+                    >
+                      {/* 移动端布局 */}
+                      <div className="md:hidden">
+                        {/* 对局信息头部 */}
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+                          <div className="flex items-center space-x-2">
+                            <Users className="w-4 h-4 text-indigo-600" />
+                            <span className="font-medium text-gray-800">{gameDetail.game.gameType}</span>
                           </div>
-
-                          {/* 玩家信息 */}
-                          <div className="mb-3">
-                            <Link
-                              to={`/profile/${player.userId}`}
-                              className="text-lg font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
-                            >
-                              {player.user?.nickname || player.user?.username || '未知玩家'}
-                            </Link>
-                          </div>
-
-                          {/* 得分信息 */}
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-gray-600">最终得分:</span>
-                              <span className="font-semibold text-gray-900">
-                                {player.finalScore.toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-gray-600">积分变化:</span>
-                              <span className={`font-semibold ${getPointsChangeColor(player.rankPointsChange)}`}>
-                                {player.rankPointsChange > 0 ? '+' : ''}{player.rankPointsChange}
-                              </span>
-                            </div>
-
+                          <div className="flex items-center space-x-1 text-gray-500">
+                            <Clock className="w-3 h-3" />
+                            <span className="text-xs">{formatDate(gameDetail.game.createdAt)}</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
 
-        {/* 分页控件 */}
-        {state.totalPages > 1 && (
-          <div className="mt-8 flex justify-center items-center space-x-2">
-            <button
-              onClick={() => handlePageChange(state.currentPage - 1)}
-              disabled={state.currentPage === 1}
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white/60 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/80 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              上一页
-            </button>
-            
-            <div className="flex items-center space-x-1">
-              {Array.from({ length: state.totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  className={`px-3 py-2 text-sm font-medium rounded-lg shadow-lg ${
-                    page === state.currentPage
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-500 bg-white/60 backdrop-blur-sm border border-white/20 hover:bg-white/80 hover:text-gray-700'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+                        {/* 玩家结果 - 紧凑布局 */}
+                        <div className="space-y-2">
+                          {sortedPlayers.map((player) => (
+                            <div
+                              key={player.id}
+                              className="flex items-center justify-between py-2 px-3 bg-gray-50/50 rounded-lg"
+                            >
+                              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getPositionColor(player.position)}`}>
+                                  {getPositionText(player.position)}
+                                </span>
+                                <Link
+                                  to={`/profile/${player.userId}`}
+                                  className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors truncate"
+                                >
+                                  {player.user?.nickname || player.user?.username || '未知玩家'}
+                                </Link>
+                              </div>
+                              <div className="text-right flex-shrink-0 ml-2">
+                                <div className="text-sm font-semibold text-gray-900">
+                                  {player.finalScore.toLocaleString()}
+                                </div>
+                                <div className={`text-xs font-medium ${getPointsChangeColor(player.rankPointsChange)}`}>
+                                  {player.rankPointsChange > 0 ? '+' : ''}{player.rankPointsChange}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 桌面端布局 */}
+                      <div className="hidden md:block">
+                        {/* 对局信息头部 */}
+                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+                          <div className="flex items-center space-x-3">
+                            <Users className="w-5 h-5 text-indigo-600" />
+                            <span className="font-semibold text-lg text-gray-800">{gameDetail.game.gameType}</span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-gray-500">
+                            <Clock className="w-4 h-4" />
+                            <span className="text-sm">{formatDate(gameDetail.game.createdAt)}</span>
+                          </div>
+                        </div>
+
+                        {/* 玩家结果 - 表格式布局 */}
+                        <div className="grid grid-cols-4 gap-4">
+                          {sortedPlayers.map((player) => (
+                            <div
+                              key={player.id}
+                              className="bg-gray-50/50 rounded-lg p-4 hover:bg-gray-100/50 transition-colors"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getPositionColor(player.position)}`}>
+                                  {getPositionText(player.position)}
+                                </span>
+                                <span className="text-xs text-gray-500">#{player.position}</span>
+                              </div>
+
+                              <div className="mb-3">
+                                <Link
+                                  to={`/profile/${player.userId}`}
+                                  className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer block truncate"
+                                >
+                                  {player.user?.nickname || player.user?.username || '未知玩家'}
+                                </Link>
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-600">得分:</span>
+                                  <span className="text-sm font-semibold text-gray-900">
+                                    {player.finalScore.toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-600">积分:</span>
+                                  <span className={`text-sm font-semibold ${getPointsChangeColor(player.rankPointsChange)}`}>
+                                    {player.rankPointsChange > 0 ? '+' : ''}{player.rankPointsChange}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            
-            <button
-              onClick={() => handlePageChange(state.currentPage + 1)}
-              disabled={state.currentPage === state.totalPages}
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white/60 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/80 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-            >
-              下一页
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </button>
-          </div>
-        )}
+          )}
+
+          {/* 分页控件 */}
+          {state.totalPages > 1 && (
+            <div className="mt-6 md:mt-8 flex justify-center items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(state.currentPage - 1)}
+                disabled={state.currentPage === 1}
+                className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white/60 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/80 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                上一页
+              </button>
+              
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: state.totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg shadow-lg ${
+                      page === state.currentPage
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-500 bg-white/60 backdrop-blur-sm border border-white/20 hover:bg-white/80 hover:text-gray-700'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              
+              <button
+                onClick={() => handlePageChange(state.currentPage + 1)}
+                disabled={state.currentPage === state.totalPages}
+                className="flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white/60 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/80 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              >
+                下一页
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+      
+      <ScrollToTop />
     </div>
   );
 };

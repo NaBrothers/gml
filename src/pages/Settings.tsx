@@ -6,6 +6,7 @@ import { useUserStore } from '../stores/userStore';
 import { toast } from 'sonner';
 import Avatar from '../components/Avatar';
 import HeaderBar from '../components/HeaderBar';
+import ScrollToTop from '../components/ScrollToTop';
 
 const Settings: React.FC = () => {
   const { user } = useAuthStore();
@@ -300,6 +301,8 @@ const Settings: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      <ScrollToTop />
     </div>
   );
 };

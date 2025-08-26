@@ -12,7 +12,7 @@ import {
   RankInfo, 
   UserRole 
 } from '../../shared/types.js';
-import { UMA_POINTS, BASE_POINTS } from '../../shared/types.js';
+import { getUmaPoints, getBasePoints, getRanksConfig, getInitialPoints, getTotalPoints } from './configManager.js';
 import { 
   userFileStorage, 
   gameFileStorage,
@@ -64,42 +64,44 @@ function generateId(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
-// 段位配置数据（简化版本）
-const RANK_CONFIGS: RankConfig[] = [
-  // 新人
-  { id: 1, rankName: '新人1', minPoints: 0, maxPoints: 19, promotionBonus: 0, demotionPenalty: 0, rankOrder: 1, majorRank: '新人', minorRankType: 'dan', minorRankRange: [1, 3] },
-  { id: 2, rankName: '新人2', minPoints: 20, maxPoints: 39, promotionBonus: 0, demotionPenalty: 0, rankOrder: 2, majorRank: '新人', minorRankType: 'dan', minorRankRange: [1, 3] },
-  { id: 3, rankName: '新人3', minPoints: 40, maxPoints: 59, promotionBonus: 0, demotionPenalty: 0, rankOrder: 3, majorRank: '新人', minorRankType: 'dan', minorRankRange: [1, 3] },
-  
-  // 9级到1级
-  { id: 4, rankName: '9级', minPoints: 60, maxPoints: 79, promotionBonus: 0, demotionPenalty: 0, rankOrder: 4, majorRank: '9级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 5, rankName: '8级', minPoints: 80, maxPoints: 99, promotionBonus: 0, demotionPenalty: 0, rankOrder: 5, majorRank: '8级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 6, rankName: '7级', minPoints: 100, maxPoints: 119, promotionBonus: 0, demotionPenalty: 0, rankOrder: 6, majorRank: '7级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 7, rankName: '6级', minPoints: 120, maxPoints: 139, promotionBonus: 0, demotionPenalty: 0, rankOrder: 7, majorRank: '6级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 8, rankName: '5级', minPoints: 140, maxPoints: 159, promotionBonus: 0, demotionPenalty: 0, rankOrder: 8, majorRank: '5级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 9, rankName: '4级', minPoints: 160, maxPoints: 179, promotionBonus: 0, demotionPenalty: 0, rankOrder: 9, majorRank: '4级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 10, rankName: '3级', minPoints: 180, maxPoints: 199, promotionBonus: 0, demotionPenalty: 0, rankOrder: 10, majorRank: '3级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 11, rankName: '2级', minPoints: 200, maxPoints: 219, promotionBonus: 0, demotionPenalty: 0, rankOrder: 11, majorRank: '2级', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 12, rankName: '1级', minPoints: 220, maxPoints: 239, promotionBonus: 0, demotionPenalty: 0, rankOrder: 12, majorRank: '1级', minorRankType: 'none', minorRankRange: [0, 0] },
-  
-  // 初段到十段
-  { id: 13, rankName: '初段', minPoints: 240, maxPoints: 399, promotionBonus: 0, demotionPenalty: 0, rankOrder: 13, majorRank: '初段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 14, rankName: '二段', minPoints: 400, maxPoints: 799, promotionBonus: 0, demotionPenalty: 0, rankOrder: 14, majorRank: '二段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 15, rankName: '三段', minPoints: 800, maxPoints: 1199, promotionBonus: 0, demotionPenalty: 0, rankOrder: 15, majorRank: '三段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 16, rankName: '四段', minPoints: 1200, maxPoints: 1599, promotionBonus: 0, demotionPenalty: 0, rankOrder: 16, majorRank: '四段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 17, rankName: '五段', minPoints: 1600, maxPoints: 1999, promotionBonus: 0, demotionPenalty: 0, rankOrder: 17, majorRank: '五段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 18, rankName: '六段', minPoints: 2000, maxPoints: 2399, promotionBonus: 0, demotionPenalty: 0, rankOrder: 18, majorRank: '六段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 19, rankName: '七段', minPoints: 2400, maxPoints: 2799, promotionBonus: 0, demotionPenalty: 0, rankOrder: 19, majorRank: '七段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 20, rankName: '八段', minPoints: 2800, maxPoints: 3199, promotionBonus: 0, demotionPenalty: 0, rankOrder: 20, majorRank: '八段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 21, rankName: '九段', minPoints: 3200, maxPoints: 3599, promotionBonus: 0, demotionPenalty: 0, rankOrder: 21, majorRank: '九段', minorRankType: 'none', minorRankRange: [0, 0] },
-  { id: 22, rankName: '十段', minPoints: 3600, maxPoints: 9999999, promotionBonus: 0, demotionPenalty: 0, rankOrder: 22, majorRank: '十段', minorRankType: 'none', minorRankRange: [0, 0] }
-];
+// 段位配置数据 - 已迁移到配置文件
+// 使用配置管理器动态获取段位配置
+function getRankConfigs(): RankConfig[] {
+  return getRanksConfig();
+}
 
 // 解析段位信息
 export function parseRankInfo(points: number): RankInfo {
-  const rankConfig = RANK_CONFIGS.find(config => 
+  const rankConfigs = getRankConfigs();
+  
+  // 如果配置为空，使用默认配置
+  if (!rankConfigs || rankConfigs.length === 0) {
+    console.warn('段位配置为空，使用默认配置');
+    const defaultConfig: RankConfig = {
+      id: 1,
+      rankName: '雀之气一段',
+      minPoints: 0,
+      maxPoints: 99999,
+      promotionBonus: 0,
+      demotionPenalty: 0,
+      rankOrder: 1,
+      majorRank: '雀之气',
+      minorRankType: 'dan',
+      minorRankRange: [1, 9]
+    };
+    
+    return {
+      majorRank: defaultConfig.majorRank,
+      minorRank: 0,
+      minorRankType: defaultConfig.minorRankType,
+      displayName: defaultConfig.rankName,
+      rankConfig: defaultConfig
+    };
+  }
+  
+  const rankConfig = rankConfigs.find(config =>
     points >= config.minPoints && points <= config.maxPoints
-  ) || RANK_CONFIGS[0];
+  ) || rankConfigs[0];
 
   return {
     majorRank: rankConfig.majorRank,
@@ -120,8 +122,9 @@ export function getRankByPoints(points: number): string {
 export function calculateMahjongPoints(scores: number[]): MahjongCalculation[] {
   // 验证总分
   const totalScore = scores.reduce((sum, score) => sum + score, 0);
-  if (totalScore !== 100000) {
-    throw new Error('四人总分必须为100000点');
+  const expectedTotal = getTotalPoints();
+  if (totalScore !== expectedTotal) {
+    throw new Error(`四人总分必须为${expectedTotal}点`);
   }
 
   // 创建玩家数据并排序
@@ -132,14 +135,18 @@ export function calculateMahjongPoints(scores: number[]): MahjongCalculation[] {
   const results: MahjongCalculation[] = new Array(4);
   
   players.forEach((player, position) => {
-    const rawPoints = (player.score - BASE_POINTS) / 1000;
-    const umaPoints = UMA_POINTS[position];
-    const rankPoints = Math.ceil(rawPoints + umaPoints);
+// 计算原点和马点
+    const basePoints = getBasePoints();
+    const umaPoints = getUmaPoints();
+    
+    const rawPoints = (player.score - basePoints) / 1000;
+    const umaPointsValue = umaPoints[position];
+    const rankPoints = Math.ceil(rawPoints + umaPointsValue);
     
     results[player.index] = {
       finalScore: player.score,
       rawPoints: parseFloat(rawPoints.toFixed(1)),
-      umaPoints,
+      umaPoints: umaPointsValue,
       rankPoints,
       position: position + 1
     };
@@ -156,8 +163,9 @@ export function calculateUserStats(userId: string): UserStats {
   );
 
   if (userGames.length === 0) {
+    const initialPoints = getInitialPoints();
     return {
-      totalPoints: 1800, // 初始积分
+      totalPoints: initialPoints, // 初始积分
       rankLevel: 16,
       rankPoints: 0,
       gamesPlayed: 0,
@@ -175,23 +183,31 @@ export function calculateUserStats(userId: string): UserStats {
   userGames.forEach(game => {
     const userPlayer = game.players.find(player => player.userId === userId);
     if (userPlayer) {
-      // 计算这局的积分变化
-      const calculation = calculateMahjongPoints(
-        game.players.map(p => p.finalScore)
-      );
-      const userCalc = calculation.find((_, index) => 
-        game.players[index].userId === userId
-      );
-      
-      if (userCalc) {
-        totalPointsChange += userCalc.rankPoints;
-        totalPosition += userCalc.position;
-        if (userCalc.position === 1) wins++;
+      try {
+        // 计算这局的积分变化
+        const calculation = calculateMahjongPoints(
+          game.players.map(p => p.finalScore)
+        );
+        const userCalc = calculation.find((_, index) => 
+          game.players[index].userId === userId
+        );
+        
+        if (userCalc) {
+          totalPointsChange += userCalc.rankPoints;
+          totalPosition += userCalc.position;
+          if (userCalc.position === 1) wins++;
+        }
+      } catch (error) {
+        // 如果历史对局数据不符合当前配置，跳过这局但记录警告
+        console.warn(`跳过不符合当前配置的历史对局 ${game.id}:`, error.message);
+        // 仍然计算位置统计，但不计算积分变化
+        totalPosition += userPlayer.position;
+        if (userPlayer.position === 1) wins++;
       }
     }
   });
 
-  const totalPoints = 1800 + totalPointsChange; // 初始积分1800 + 积分变化
+  const totalPoints = getInitialPoints() + totalPointsChange; // 初始积分 + 积分变化
   const rankInfo = parseRankInfo(totalPoints);
   const averagePosition = userGames.length > 0 ? totalPosition / userGames.length : 0;
 
@@ -213,44 +229,50 @@ export function calculateUserPointHistory(userId: string): PointHistory[] {
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   const history: PointHistory[] = [];
-  let currentPoints = 1800; // 初始积分
+  let currentPoints = getInitialPoints(); // 初始积分
 
   userGames.forEach(game => {
     const userPlayer = game.players.find(player => player.userId === userId);
     if (userPlayer) {
-      const calculation = calculateMahjongPoints(
-        game.players.map(p => p.finalScore)
-      );
-      const userCalc = calculation.find((_, index) => 
-        game.players[index].userId === userId
-      );
-      
-      if (userCalc) {
-        const pointsBefore = currentPoints;
-        const pointsAfter = currentPoints + userCalc.rankPoints;
-        const rankBefore = getRankByPoints(pointsBefore);
-        const rankAfter = getRankByPoints(pointsAfter);
+      try {
+        const calculation = calculateMahjongPoints(
+          game.players.map(p => p.finalScore)
+        );
+        const userCalc = calculation.find((_, index) => 
+          game.players[index].userId === userId
+        );
         
-        // 获取对手信息
-        const opponents = game.players
-          .filter(p => p.userId !== userId)
-          .map(p => {
-            const user = users.find(u => u.id === p.userId);
-            return user?.nickname || user?.username || '未知玩家';
+        if (userCalc) {
+          const pointsBefore = currentPoints;
+          const pointsAfter = currentPoints + userCalc.rankPoints;
+          const rankBefore = getRankByPoints(pointsBefore);
+          const rankAfter = getRankByPoints(pointsAfter);
+          
+          // 获取对手信息
+          const opponents = game.players
+            .filter(p => p.userId !== userId)
+            .map(p => {
+              const user = users.find(u => u.id === p.userId);
+              return user?.nickname || user?.username || '未知玩家';
+            });
+
+          history.push({
+            gameId: game.id,
+            pointsBefore,
+            pointsAfter,
+            pointsChange: userCalc.rankPoints,
+            rankBefore,
+            rankAfter,
+            gameDate: game.createdAt,
+            opponents
           });
 
-        history.push({
-          gameId: game.id,
-          pointsBefore,
-          pointsAfter,
-          pointsChange: userCalc.rankPoints,
-          rankBefore,
-          rankAfter,
-          gameDate: game.createdAt,
-          opponents
-        });
-
-        currentPoints = pointsAfter;
+          currentPoints = pointsAfter;
+        }
+      } catch (error) {
+        // 如果历史对局数据不符合当前配置，跳过这局但记录警告
+        console.warn(`跳过不符合当前配置的历史对局 ${game.id}:`, error.message);
+        // 不添加到历史记录中，但保持积分不变
       }
     }
   });
@@ -384,27 +406,44 @@ export const gameDb = {
 // 兼容性函数（为了向后兼容）
 export const gamePlayerDb = {
   async findByGameId(gameId: string): Promise<GamePlayerDetail[]> {
-    await loadAllData();
     const game = games.find(g => g.id === gameId);
     if (!game) return [];
 
-    const calculations = calculateMahjongPoints(
-      game.players.map(p => p.finalScore)
-    );
+    try {
+      const calculations = calculateMahjongPoints(
+        game.players.map(p => p.finalScore)
+      );
 
-    return game.players.map((player, index) => {
-      const user = users.find(u => u.id === player.userId);
-      const calc = calculations[index];
+      return game.players.map((player, index) => {
+        const user = users.find(u => u.id === player.userId);
+        const calc = calculations[index];
+        
+        return {
+          ...player,
+          id: `${gameId}_${player.userId}`,
+          user,
+          rawPoints: calc.rawPoints,
+          umaPoints: calc.umaPoints,
+          rankPointsChange: calc.rankPoints
+        };
+      });
+    } catch (error) {
+      // 如果历史对局数据不符合当前配置，返回基础信息但不计算积分变化
+      console.warn(`跳过不符合当前配置的历史对局 ${gameId}:`, error.message);
       
-      return {
-        ...player,
-        id: `${gameId}_${player.userId}`,
-        user,
-        rawPoints: calc.rawPoints,
-        umaPoints: calc.umaPoints,
-        rankPointsChange: calc.rankPoints
-      };
-    });
+      return game.players.map((player) => {
+        const user = users.find(u => u.id === player.userId);
+        
+        return {
+          ...player,
+          id: `${gameId}_${player.userId}`,
+          user,
+          rawPoints: 0,
+          umaPoints: 0,
+          rankPointsChange: 0
+        };
+      });
+    }
   },
 
   async findByUserId(userId: string): Promise<GamePlayerDetail[]> {

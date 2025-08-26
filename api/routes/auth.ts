@@ -65,7 +65,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
     // 生成JWT token
     const token = jwt.sign(
-      { userId: user.id, username: user.username },
+      { userId: user.id, username: user.username, role: user.role },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -138,7 +138,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
     // 生成JWT token
     const token = jwt.sign(
-      { userId: user.id, username: user.username },
+      { userId: user.id, username: user.username, role: user.role },
       JWT_SECRET,
       { expiresIn: '7d' }
     );

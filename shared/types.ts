@@ -172,10 +172,11 @@ export interface MahjongCalculation {
   position: number;
 }
 
-// 常量
-export const UMA_POINTS = [20, 10, 0, -10]; // 1-4位的马点
-export const BASE_POINTS = 25000; // 配点（精算原点）
-export const TOTAL_POINTS = 100000; // 四人总分
+// 常量 - 已迁移到配置文件，这些导出用于向后兼容
+// 实际值将从配置管理器动态获取
+// export const UMA_POINTS = [20, 10, 0, -10]; // 1-4位的马点 - 已迁移到 config/game.conf
+// export const BASE_POINTS = 25000; // 配点（精算原点） - 已迁移到 config/game.conf  
+// export const TOTAL_POINTS = 100000; // 四人总分 - 已迁移到 config/game.conf
 
 // 兼容性类型定义（为了向后兼容，逐步迁移时使用）
 export interface Game extends GameRecord {}

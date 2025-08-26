@@ -272,4 +272,42 @@ export const healthApi = {
   }
 };
 
+// 配置相关API
+export const configApi = {
+  // 获取所有配置
+  getAll: (): Promise<ApiResponse<{
+    game: {
+      BASE_POINTS: number;
+      TOTAL_POINTS: number;
+      INITIAL_POINTS: number;
+      UMA_POINTS: number[];
+      DEFAULT_GAME_TYPE: string;
+      MIN_PLAYERS: number;
+      MAX_PLAYERS: number;
+    };
+    scoring: any;
+    ranks: any[];
+  }>> => {
+    return apiClient.get('/config');
+  },
+
+  // 获取游戏配置
+  getGameConfig: (): Promise<ApiResponse<{
+    BASE_POINTS: number;
+    TOTAL_POINTS: number;
+    INITIAL_POINTS: number;
+    UMA_POINTS: number[];
+    DEFAULT_GAME_TYPE: string;
+    MIN_PLAYERS: number;
+    MAX_PLAYERS: number;
+  }>> => {
+    return apiClient.get('/config/game');
+  },
+
+  // 获取公开段位配置（无需认证）
+  getPublicRanks: (): Promise<ApiResponse<any[]>> => {
+    return fetch('/api/config/public/ranks').then(res => res.json());
+  }
+};
+
 export default apiClient;

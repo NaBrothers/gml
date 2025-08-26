@@ -3,6 +3,7 @@
  */
 import app from './app.js';
 import { initializeDatabase } from './utils/database.js';
+import { ConfigManager } from './utils/configManager.js';
 
 /**
  * start server with port
@@ -17,9 +18,13 @@ const server = app.listen(PORT, async () => {
   console.log(`🚀 启动模式: ${isProduction ? '生产环境' : '开发环境'}`);
   
   try {
+    // 初始化配置管理器
+    await ConfigManager.initialize();
+    
+    // 初始化数据库
     await initializeDatabase();
   } catch (error) {
-    console.error('❌ 数据库初始化失败:', error);
+    console.error('❌ 初始化失败:', error);
   }
 });
 
