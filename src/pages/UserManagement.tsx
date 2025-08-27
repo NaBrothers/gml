@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, ShieldCheck, Crown, Edit2, Save, X, ArrowLeft } from 'lucide-react';
+import { Users, Shield, ShieldCheck, Crown, Edit2, Save, X, ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuthStore } from '../stores/authStore';
 import { User, UserRole } from '../../shared/types';
@@ -7,8 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 import HeaderBar from '../components/HeaderBar';
 import ScrollToTop from '../components/ScrollToTop';
-
-// 段位配置数据（与后端保持一致）
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useConfirm } from '../hooks/useConfirm';
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
 
 interface UserWithActions {
@@ -35,6 +35,7 @@ const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserWithActions[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { confirmState, showConfirm } = useConfirm();
 
   // 获取用户列表
   const fetchUsers = async () => {
@@ -96,6 +97,45 @@ const UserManagement: React.FC = () => {
     } catch (error) {
       console.error('更新用户权限失败:', error);
       toast.error('更新用户权限失败');
+    }
+  };
+
+  // 删除用户
+  const deleteUser = async (userId: string, username: string) => {
+    // 使用自定义确认对话框
+    const confirmed = await showConfirm({
+      title: '删除用户确认',
+      message: `确定要删除用户 "${username}" 吗？\n\n此操作不可撤销，将会：\n- 删除用户账户\n- 保留该用户的比赛记录（显示为"已删除"）\n- 清除相关积分缓存`,
+      confirmText: '删除',
+      cancelText: '取消',
+      type: 'danger'
+    });
+    
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('删除用户失败');
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        setUsers(prev => prev.filter(user => user.id !== userId));
+        toast.success('用户删除成功');
+      } else {
+        toast.error(data.error || '删除用户失败');
+      }
+    } catch (error) {
+      console.error('删除用户失败:', error);
+      toast.error('删除用户失败');
     }
   };
 
@@ -363,15 +403,26 @@ const UserManagement: React.FC = () => {
                   </td>
                   {currentUser?.role === UserRole.SUPER_ADMIN && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {canEditRole(user) && !user.isEditing && (
-                        <button
-                          onClick={() => startEditing(user.id)}
-                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors flex items-center"
-                        >
-                          <Edit2 className="w-4 h-4 mr-1" />
-                          编辑权限
-                        </button>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {canEditRole(user) && !user.isEditing && (
+                          <button
+                            onClick={() => startEditing(user.id)}
+                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors flex items-center"
+                          >
+                            <Edit2 className="w-4 h-4 mr-1" />
+                            编辑权限
+                          </button>
+                        )}
+                        {canEditRole(user) && (
+                          <button
+                            onClick={() => deleteUser(user.id, user.username)}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors flex items-center"
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            删除
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -467,14 +518,27 @@ const UserManagement: React.FC = () => {
                     {new Date(user.createdAt).toLocaleDateString('zh-CN')}
                   </div>
                 </div>
-                {currentUser?.role === UserRole.SUPER_ADMIN && canEditRole(user) && !user.isEditing && (
-                  <button
-                    onClick={() => startEditing(user.id)}
-                    className="px-3 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg flex items-center text-sm transition-colors"
-                  >
-                    <Edit2 className="w-4 h-4 mr-1" />
-                    编辑权限
-                  </button>
+                {currentUser?.role === UserRole.SUPER_ADMIN && (
+                  <div className="flex items-center space-x-2">
+                    {canEditRole(user) && !user.isEditing && (
+                      <button
+                        onClick={() => startEditing(user.id)}
+                        className="px-3 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg flex items-center text-sm transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4 mr-1" />
+                        编辑权限
+                      </button>
+                    )}
+                    {canEditRole(user) && (
+                      <button
+                        onClick={() => deleteUser(user.id, user.username)}
+                        className="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg flex items-center text-sm transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        删除
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -490,7 +554,19 @@ const UserManagement: React.FC = () => {
         </div>
        
        <ScrollToTop />
-      </div>
+      
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        onConfirm={confirmState.onConfirm}
+        onCancel={confirmState.onCancel}
+        type={confirmState.type}
+      />
+    </div>
   );
 };
 

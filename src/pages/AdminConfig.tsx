@@ -30,17 +30,7 @@ interface ConfigData {
     DEFAULT_GAME_TYPE: string;
     MIN_PLAYERS: number;
     MAX_PLAYERS: number;
-  };
-  scoring: {
-    SCORE_CALCULATION_BASE: number;
-    TOTAL_SCORE_VALIDATION: number;
-    RANK_POINT_MULTIPLIER: number;
-    PROMOTION_BONUS_ENABLED: boolean;
-    DEMOTION_PENALTY_ENABLED: boolean;
-    MAX_POINTS_GAIN_PER_GAME: number;
-    MAX_POINTS_LOSS_PER_GAME: number;
-    NEW_USER_INITIAL_POINTS: number;
-    NEW_USER_INITIAL_RANK_LEVEL: number;
+    NEWBIE_PROTECTION_MAX_RANK: number;
   };
   ranks: Array<{
     id: number;
@@ -60,7 +50,7 @@ const AdminConfig: React.FC = () => {
   // 所有Hooks必须在组件顶部调用，不能在条件语句之后
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'game' | 'scoring' | 'ranks'>('game');
+  const [activeTab, setActiveTab] = useState<'game' | 'ranks'>('game');
   const [config, setConfig] = useState<ConfigData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -99,7 +89,7 @@ const AdminConfig: React.FC = () => {
   };
 
   // 保存配置
-  const saveConfig = async (type: 'game' | 'scoring' | 'ranks') => {
+  const saveConfig = async (type: 'game' | 'ranks') => {
     if (!config) return;
     
     try {
@@ -124,7 +114,7 @@ const AdminConfig: React.FC = () => {
       
       if (response.ok) {
         if (result.success) {
-          toast.success('配置保存成功');
+          toast.success(`${type === 'game' ? '游戏' : '段位'}配置保存成功`);
           // 保存成功后刷新页面
           setTimeout(() => {
             window.location.reload();
@@ -290,7 +280,6 @@ const AdminConfig: React.FC = () => {
 
   const tabs = [
     { id: 'game' as const, name: '游戏配置', icon: Database, description: '基础游戏参数设置' },
-    { id: 'scoring' as const, name: '积分配置', icon: Target, description: '积分计算规则设置' },
     { id: 'ranks' as const, name: '段位配置', icon: Trophy, description: '段位系统管理' }
   ];
 
@@ -492,106 +481,30 @@ const AdminConfig: React.FC = () => {
                   ))}
                 </div>
               </div>
-            </div>
-          )}
-
-          {activeTab === 'scoring' && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">积分计算配置</h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">积分计算基数</label>
-                  <input
-                    type="number"
-                    value={config.scoring.SCORE_CALCULATION_BASE}
-                    onChange={(e) => setConfig({
-                      ...config,
-                      scoring: { ...config.scoring, SCORE_CALCULATION_BASE: parseInt(e.target.value) }
-                    })}
-                    disabled={previewMode}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">段位积分倍率</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={config.scoring.RANK_POINT_MULTIPLIER}
-                    onChange={(e) => setConfig({
-                      ...config,
-                      scoring: { ...config.scoring, RANK_POINT_MULTIPLIER: parseFloat(e.target.value) }
-                    })}
-                    disabled={previewMode}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">新用户初始积分</label>
-                  <input
-                    type="number"
-                    value={config.scoring.NEW_USER_INITIAL_POINTS}
-                    onChange={(e) => setConfig({
-                      ...config,
-                      scoring: { ...config.scoring, NEW_USER_INITIAL_POINTS: parseInt(e.target.value) }
-                    })}
-                    disabled={previewMode}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">新用户初始段位等级</label>
-                  <input
-                    type="number"
-                    value={config.scoring.NEW_USER_INITIAL_RANK_LEVEL}
-                    onChange={(e) => setConfig({
-                      ...config,
-                      scoring: { ...config.scoring, NEW_USER_INITIAL_RANK_LEVEL: parseInt(e.target.value) }
-                    })}
-                    disabled={previewMode}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="promotionBonus"
-                    checked={config.scoring.PROMOTION_BONUS_ENABLED}
-                    onChange={(e) => setConfig({
-                      ...config,
-                      scoring: { ...config.scoring, PROMOTION_BONUS_ENABLED: e.target.checked }
-                    })}
-                    disabled={previewMode}
-                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                  />
-                  <label htmlFor="promotionBonus" className="text-sm font-medium text-gray-700">
-                    启用升段奖励
-                  </label>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="demotionPenalty"
-                    checked={config.scoring.DEMOTION_PENALTY_ENABLED}
-                    onChange={(e) => setConfig({
-                      ...config,
-                      scoring: { ...config.scoring, DEMOTION_PENALTY_ENABLED: e.target.checked }
-                    })}
-                    disabled={previewMode}
-                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                  />
-                  <label htmlFor="demotionPenalty" className="text-sm font-medium text-gray-700">
-                    启用降段惩罚
-                  </label>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  新手保护段位上限
+                  <span className="text-xs text-gray-500 ml-2">
+                    (段位等级小于等于此值的玩家不会扣分)
+                  </span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={config.game.NEWBIE_PROTECTION_MAX_RANK}
+                  onChange={(e) => setConfig({
+                    ...config,
+                    game: { ...config.game, NEWBIE_PROTECTION_MAX_RANK: parseInt(e.target.value) }
+                  })}
+                  disabled={previewMode}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                  placeholder="例如: 9 (雀之气九段及以下)"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  当前设置: 段位等级 ≤ {config.game.NEWBIE_PROTECTION_MAX_RANK} 的玩家享受新手保护
+                </p>
               </div>
             </div>
           )}

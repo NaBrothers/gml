@@ -3,6 +3,14 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { RankConfig } from '../../shared/types.js';
 
+// 导入缓存失效函数
+let invalidatePointsCache: (() => void) | null = null;
+
+// 设置缓存失效回调函数
+export function setPointsCacheInvalidator(invalidator: () => void): void {
+  invalidatePointsCache = invalidator;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -18,30 +26,19 @@ interface GameConfig {
   DEFAULT_GAME_TYPE: string;
   MIN_PLAYERS: number;
   MAX_PLAYERS: number;
+  NEWBIE_PROTECTION_MAX_RANK: number;
 }
 
-interface ScoringConfig {
-  SCORE_CALCULATION_BASE: number;
-  TOTAL_SCORE_VALIDATION: number;
-  RANK_POINT_MULTIPLIER: number;
-  PROMOTION_BONUS_ENABLED: boolean;
-  DEMOTION_PENALTY_ENABLED: boolean;
-  MAX_POINTS_GAIN_PER_GAME: number;
-  MAX_POINTS_LOSS_PER_GAME: number;
-  NEW_USER_INITIAL_POINTS: number;
-  NEW_USER_INITIAL_RANK_LEVEL: number;
-}
+
 
 interface ConfigCache {
   game: GameConfig;
-  scoring: ScoringConfig;
   ranks: RankConfig[];
   lastModified: { [key: string]: number };
 }
 
 let configCache: ConfigCache = {
   game: {} as GameConfig,
-  scoring: {} as ScoringConfig,
   ranks: [],
   lastModified: {}
 };
@@ -160,36 +157,23 @@ function isFileModified(filePath: string, lastModified: number): boolean {
 
 // 加载配置文件
 async function loadConfig(forceReload: boolean = false): Promise<void> {
-  const gameConfigPath = path.join(CONFIG_DIR, 'game.conf');
-  const scoringConfigPath = path.join(CONFIG_DIR, 'scoring.conf');
-  const ranksConfigPath = path.join(CONFIG_DIR, 'ranks.conf');
-
   try {
-    // 检查是否需要重新加载
+    const gameConfigPath = path.join(CONFIG_DIR, 'game.conf');
+    const ranksConfigPath = path.join(CONFIG_DIR, 'ranks.conf');
+
+    // 检查文件是否被修改
     const gameModified = forceReload || isFileModified(gameConfigPath, configCache.lastModified.game || 0);
-    const scoringModified = forceReload || isFileModified(scoringConfigPath, configCache.lastModified.scoring || 0);
     const ranksModified = forceReload || isFileModified(ranksConfigPath, configCache.lastModified.ranks || 0);
 
     if (gameModified) {
-      const gameConfig = parseConfFile(gameConfigPath);
-      configCache.game = gameConfig as GameConfig;
-      configCache.lastModified.game = fs.statSync(gameConfigPath).mtime.getTime();
-      console.log('游戏配置已重新加载');
-    }
-
-    if (scoringModified) {
-      const scoringConfig = parseConfFile(scoringConfigPath);
-      configCache.scoring = scoringConfig as ScoringConfig;
-      configCache.lastModified.scoring = fs.statSync(scoringConfigPath).mtime.getTime();
-      console.log('积分配置已重新加载');
+      configCache.game = parseConfFile(gameConfigPath) as GameConfig;
+      configCache.lastModified.game = fs.statSync(gameConfigPath).mtimeMs;
     }
 
     if (ranksModified) {
       configCache.ranks = parseRanksConfig(ranksConfigPath);
-      configCache.lastModified.ranks = fs.statSync(ranksConfigPath).mtime.getTime();
-      console.log('段位配置已重新加载');
+      configCache.lastModified.ranks = fs.statSync(ranksConfigPath).mtimeMs;
     }
-
   } catch (error) {
     console.error('加载配置文件失败:', error);
     throw error;
@@ -197,31 +181,21 @@ async function loadConfig(forceReload: boolean = false): Promise<void> {
 }
 
 // 保存配置到文件
-async function saveConfig(configType: 'game' | 'scoring' | 'ranks', config: any): Promise<void> {
+async function saveConfig(configType: 'game' | 'ranks', config: any): Promise<void> {
   let filePath: string;
   let content: string;
 
-  switch (configType) {
-    case 'game':
-      filePath = path.join(CONFIG_DIR, 'game.conf');
-      content = generateGameConfigContent(config);
-      break;
-    case 'scoring':
-      filePath = path.join(CONFIG_DIR, 'scoring.conf');
-      content = generateScoringConfigContent(config);
-      break;
-    case 'ranks':
-      filePath = path.join(CONFIG_DIR, 'ranks.conf');
-      content = generateRanksConfigContent(config);
-      break;
-    default:
-      throw new Error(`未知的配置类型: ${configType}`);
+  if (configType === 'game') {
+    filePath = path.join(CONFIG_DIR, 'game.conf');
+    content = generateGameConfigContent(config);
+  } else if (configType === 'ranks') {
+    filePath = path.join(CONFIG_DIR, 'ranks.conf');
+    content = generateRanksConfigContent(config);
+  } else {
+    throw new Error(`不支持的配置类型: ${configType}`);
   }
 
-  fs.writeFileSync(filePath, content, 'utf-8');
-  
-  // 重新加载配置
-  await loadConfig(true);
+  await fs.promises.writeFile(filePath, content, 'utf8');
 }
 
 // 生成游戏配置文件内容
@@ -243,31 +217,13 @@ DEFAULT_GAME_TYPE=${config.DEFAULT_GAME_TYPE}
 
 # 其他游戏规则配置
 MIN_PLAYERS=${config.MIN_PLAYERS}
-MAX_PLAYERS=${config.MAX_PLAYERS}`;
+MAX_PLAYERS=${config.MAX_PLAYERS}
+
+# 新手保护配置
+NEWBIE_PROTECTION_MAX_RANK=${config.NEWBIE_PROTECTION_MAX_RANK}`;
 }
 
-// 生成积分配置文件内容
-function generateScoringConfigContent(config: ScoringConfig): string {
-  return `# 积分计算配置文件
-# 格式: key=value
 
-# 积分计算基础配置
-SCORE_CALCULATION_BASE=${config.SCORE_CALCULATION_BASE}
-TOTAL_SCORE_VALIDATION=${config.TOTAL_SCORE_VALIDATION}
-
-# 段位积分配置
-RANK_POINT_MULTIPLIER=${config.RANK_POINT_MULTIPLIER}
-PROMOTION_BONUS_ENABLED=${config.PROMOTION_BONUS_ENABLED}
-DEMOTION_PENALTY_ENABLED=${config.DEMOTION_PENALTY_ENABLED}
-
-# 积分变化限制
-MAX_POINTS_GAIN_PER_GAME=${config.MAX_POINTS_GAIN_PER_GAME}
-MAX_POINTS_LOSS_PER_GAME=${config.MAX_POINTS_LOSS_PER_GAME}
-
-# 新用户配置
-NEW_USER_INITIAL_POINTS=${config.NEW_USER_INITIAL_POINTS}
-NEW_USER_INITIAL_RANK_LEVEL=${config.NEW_USER_INITIAL_RANK_LEVEL}`;
-}
 
 // 生成段位配置文件内容
 function generateRanksConfigContent(ranks: RankConfig[]): string {
@@ -311,91 +267,70 @@ export class ConfigManager {
 
   // 获取游戏配置
   static getGameConfig(): GameConfig {
-    // 如果配置为空，尝试同步加载
-    if (Object.keys(configCache.game).length === 0) {
-      console.warn('游戏配置缓存为空，尝试同步加载配置文件');
-      try {
-        const gameConfigPath = path.join(CONFIG_DIR, 'game.conf');
-        if (fs.existsSync(gameConfigPath)) {
-          const gameConfig = parseConfFile(gameConfigPath);
-          configCache.game = gameConfig as GameConfig;
-          configCache.lastModified.game = fs.statSync(gameConfigPath).mtime.getTime();
-          console.log('游戏配置同步加载成功');
-        }
-      } catch (error) {
-        console.error('同步加载游戏配置失败:', error);
-      }
+    if (!configCache.game || Object.keys(configCache.game).length === 0) {
+      throw new Error('游戏配置未加载');
     }
-    
-    return { ...configCache.game };
-  }
-
-  // 获取积分配置
-  static getScoringConfig(): ScoringConfig {
-    return { ...configCache.scoring };
+    return configCache.game;
   }
 
   // 获取段位配置
   static getRanksConfig(): RankConfig[] {
-    // 如果配置为空，尝试同步加载
-    if (configCache.ranks.length === 0) {
-      console.warn('段位配置缓存为空，尝试同步加载配置文件');
-      try {
-        const ranksConfigPath = path.join(CONFIG_DIR, 'ranks.conf');
-        if (fs.existsSync(ranksConfigPath)) {
-          configCache.ranks = parseRanksConfig(ranksConfigPath);
-          configCache.lastModified.ranks = fs.statSync(ranksConfigPath).mtime.getTime();
-          console.log('段位配置同步加载成功，共', configCache.ranks.length, '个段位');
-        }
-      } catch (error) {
-        console.error('同步加载段位配置失败:', error);
-      }
+    if (!configCache.ranks || configCache.ranks.length === 0) {
+      throw new Error('段位配置未加载');
     }
-    
-    return [...configCache.ranks];
+    return configCache.ranks;
   }
 
   // 获取所有配置
   static getAllConfig() {
     return {
       game: this.getGameConfig(),
-      scoring: this.getScoringConfig(),
       ranks: this.getRanksConfig()
     };
   }
 
   // 更新配置
-  static async updateConfig(configType: 'game' | 'scoring' | 'ranks', config: any): Promise<void> {
+  static async updateConfig(configType: 'game' | 'ranks', config: any): Promise<void> {
     await saveConfig(configType, config);
+    await this.reloadConfig();
+    // 配置更新后，清空积分缓存
+    if (invalidatePointsCache) {
+      invalidatePointsCache();
+    }
   }
 
   // 重新加载配置
   static async reloadConfig(): Promise<void> {
     await loadConfig(true);
+    // 配置变更后，清空积分缓存
+    if (invalidatePointsCache) {
+      invalidatePointsCache();
+    }
   }
 
   // 检查并自动重新加载配置（热重载）
   static async checkAndReload(): Promise<boolean> {
-    const gameConfigPath = path.join(CONFIG_DIR, 'game.conf');
-    const scoringConfigPath = path.join(CONFIG_DIR, 'scoring.conf');
-    const ranksConfigPath = path.join(CONFIG_DIR, 'ranks.conf');
+    try {
+      const gameConfigPath = path.join(CONFIG_DIR, 'game.conf');
+      const ranksConfigPath = path.join(CONFIG_DIR, 'ranks.conf');
 
-    const gameModified = isFileModified(gameConfigPath, configCache.lastModified.game || 0);
-    const scoringModified = isFileModified(scoringConfigPath, configCache.lastModified.scoring || 0);
-    const ranksModified = isFileModified(ranksConfigPath, configCache.lastModified.ranks || 0);
+      const gameModified = isFileModified(gameConfigPath, configCache.lastModified.game || 0);
+      const ranksModified = isFileModified(ranksConfigPath, configCache.lastModified.ranks || 0);
 
-    if (gameModified || scoringModified || ranksModified) {
-      await loadConfig();
-      return true;
+      if (gameModified || ranksModified) {
+        await loadConfig();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('检查配置文件失败:', error);
+      return false;
     }
-
-    return false;
   }
 }
 
 // 导出便捷函数
 export const getGameConfig = () => ConfigManager.getGameConfig();
-export const getScoringConfig = () => ConfigManager.getScoringConfig();
 export const getRanksConfig = () => ConfigManager.getRanksConfig();
 export const getAllConfig = () => ConfigManager.getAllConfig();
 
@@ -404,3 +339,4 @@ export const getUmaPoints = () => ConfigManager.getGameConfig().UMA_POINTS;
 export const getBasePoints = () => ConfigManager.getGameConfig().BASE_POINTS;
 export const getTotalPoints = () => ConfigManager.getGameConfig().TOTAL_POINTS;
 export const getInitialPoints = () => ConfigManager.getGameConfig().INITIAL_POINTS;
+export const getNewbieProtectionMaxRank = () => ConfigManager.getGameConfig().NEWBIE_PROTECTION_MAX_RANK;

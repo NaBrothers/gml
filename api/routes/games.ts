@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
-import { userDb, gameDb, gamePlayerDb, pointHistoryDb, calculateMahjongPoints, getRankByPoints, parseRankInfo } from '../utils/database.js';
-import { ApiResponse, GameResult, GameDetail, GameRecord, GamePlayerDetail } from '../../shared/types.js';
+import { userDb, gameDb, gamePlayerDb, pointHistoryDb, calculateMahjongPoints, calculateMahjongPointsWithProtection, getRankByPoints, parseRankInfo } from '../utils/database.js';
+import { ApiResponse, GameResult, GameDetail, GameRecord, GamePlayerDetail, UserRole } from '../../shared/types.js';
+import { authenticateToken } from './auth.js';
 
 const router = express.Router();
 
@@ -30,10 +31,10 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json(response);
     }
 
-    // 计算积分变化
+    // 计算积分变化（使用新手保护）
     let calculations;
     try {
-      calculations = calculateMahjongPoints(scores);
+      calculations = calculateMahjongPointsWithProtection(scores, players);
     } catch (error) {
       const response: ApiResponse = {
         success: false,
@@ -147,6 +148,57 @@ router.get('/:id', async (req: Request, res: Response) => {
     const response: ApiResponse = {
       success: false,
       error: '获取对局详情失败'
+    };
+    res.status(500).json(response);
+  }
+});
+
+// 删除对局记录（仅超级管理员）
+router.delete('/:id', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const user = (req as any).user;
+
+    // 检查权限：只有超级管理员可以删除对局记录
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      const response: ApiResponse = {
+        success: false,
+        error: '权限不足，只有超级管理员可以删除对局记录'
+      };
+      return res.status(403).json(response);
+    }
+
+    // 检查对局是否存在
+    const game = await gameDb.findById(id);
+    if (!game) {
+      const response: ApiResponse = {
+        success: false,
+        error: '对局不存在'
+      };
+      return res.status(404).json(response);
+    }
+
+    // 删除对局记录
+    const deleted = await gameDb.delete(id);
+    
+    if (!deleted) {
+      const response: ApiResponse = {
+        success: false,
+        error: '删除对局失败'
+      };
+      return res.status(500).json(response);
+    }
+
+    const response: ApiResponse = {
+      success: true,
+      message: '对局删除成功'
+    };
+    res.json(response);
+  } catch (error) {
+    console.error('删除对局失败:', error);
+    const response: ApiResponse = {
+      success: false,
+      error: '删除对局失败'
     };
     res.status(500).json(response);
   }

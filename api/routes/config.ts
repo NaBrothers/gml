@@ -71,9 +71,6 @@ router.get('/:type', authenticateToken, async (req: Request, res: Response) => {
       case 'game':
         config = ConfigManager.getGameConfig();
         break;
-      case 'scoring':
-        config = ConfigManager.getScoringConfig();
-        break;
       case 'ranks':
         config = ConfigManager.getRanksConfig();
         break;
@@ -102,70 +99,58 @@ router.put('/:type', authenticateToken, requireSuperAdmin, async (req: Request, 
   try {
     const { type } = req.params;
     const config = req.body;
-    
+
     // 验证配置类型
-    if (!['game', 'scoring', 'ranks'].includes(type)) {
+    if (!['game', 'ranks'].includes(type)) {
       return res.status(400).json({
         success: false,
-        error: '无效的配置类型'
+        error: '不支持的配置类型'
       } as ApiResponse);
     }
-    
-    // 基础配置验证
+
+    // 基本验证
+    if (!config) {
+      return res.status(400).json({
+        success: false,
+        error: '配置数据不能为空'
+      } as ApiResponse);
+    }
+
+    // 类型特定验证
     if (type === 'game') {
-      if (!config.BASE_POINTS || !config.TOTAL_POINTS || !config.UMA_POINTS) {
+      if (!config.BASE_POINTS || !config.TOTAL_POINTS || config.INITIAL_POINTS === undefined || config.INITIAL_POINTS === null) {
         return res.status(400).json({
           success: false,
           error: '游戏配置缺少必要字段'
         } as ApiResponse);
       }
-      
-      if (!Array.isArray(config.UMA_POINTS) || config.UMA_POINTS.length !== 4) {
-        return res.status(400).json({
-          success: false,
-          error: '马点配置必须是包含4个数值的数组'
-        } as ApiResponse);
-      }
-    }
-    
-    if (type === 'scoring') {
-      if (!config.SCORE_CALCULATION_BASE || !config.TOTAL_SCORE_VALIDATION) {
-        return res.status(400).json({
-          success: false,
-          error: '积分配置缺少必要字段'
-        } as ApiResponse);
-      }
     }
     
     if (type === 'ranks') {
-      if (!Array.isArray(config) || config.length === 0) {
+      if (!Array.isArray(config)) {
         return res.status(400).json({
           success: false,
-          error: '段位配置必须是非空数组'
+          error: '段位配置必须是数组'
         } as ApiResponse);
       }
-      
-      // 验证段位配置的完整性
-      for (const rank of config) {
-        if (!rank.id || !rank.rankName || rank.minPoints === undefined || rank.maxPoints === undefined) {
-          return res.status(400).json({
-            success: false,
-            error: '段位配置缺少必要字段'
-          } as ApiResponse);
-        }
-      }
     }
-    
+
     // 更新配置
-    await ConfigManager.updateConfig(type as 'game' | 'scoring' | 'ranks', config);
-    
-    // 记录配置变更日志
-    console.log(`配置已更新 - 类型: ${type}, 用户: ${(req as any).user?.username}, 时间: ${new Date().toISOString()}`);
-    
+    await ConfigManager.updateConfig(type as 'game' | 'ranks', config);
+
+    // 记录配置变更历史
+    configChangeHistory.push({
+      timestamp: new Date().toISOString(),
+      type,
+      user: (req as any).user?.username || 'unknown',
+      action: 'update'
+    });
+
     res.json({
       success: true,
-      message: '配置更新成功'
+      message: `${type === 'game' ? '游戏' : '段位'}配置更新成功`
     } as ApiResponse);
+
   } catch (error) {
     console.error('更新配置失败:', error);
     res.status(500).json({
@@ -297,27 +282,21 @@ router.post('/validate/:type', authenticateToken, requireSuperAdmin, async (req:
   try {
     const { type } = req.params;
     const config = req.body;
-    
+
     const errors: string[] = [];
-    
+
     if (type === 'game') {
       if (!config.BASE_POINTS || config.BASE_POINTS <= 0) {
-        errors.push('配点必须大于0');
+        errors.push('基础分数必须大于0');
       }
       if (!config.TOTAL_POINTS || config.TOTAL_POINTS <= 0) {
-        errors.push('总分必须大于0');
+        errors.push('总分数必须大于0');
       }
-      if (!Array.isArray(config.UMA_POINTS) || config.UMA_POINTS.length !== 4) {
-        errors.push('马点必须是包含4个数值的数组');
+      if (!config.INITIAL_POINTS && config.INITIAL_POINTS !== 0) {
+        errors.push('初始分数不能为空');
       }
-    }
-    
-    if (type === 'scoring') {
-      if (!config.SCORE_CALCULATION_BASE || config.SCORE_CALCULATION_BASE <= 0) {
-        errors.push('积分计算基准必须大于0');
-      }
-      if (!config.TOTAL_SCORE_VALIDATION || config.TOTAL_SCORE_VALIDATION <= 0) {
-        errors.push('总分验证值必须大于0');
+      if (typeof config.INITIAL_POINTS !== 'number' || config.INITIAL_POINTS < 0) {
+        errors.push('初始分数必须是大于等于0的数字');
       }
     }
     
@@ -325,41 +304,29 @@ router.post('/validate/:type', authenticateToken, requireSuperAdmin, async (req:
       if (!Array.isArray(config)) {
         errors.push('段位配置必须是数组');
       } else {
-        const rankOrders = new Set();
-        const rankIds = new Set();
-        
-        for (let i = 0; i < config.length; i++) {
-          const rank = config[i];
-          
-          if (!rank.id || !rank.rankName) {
-            errors.push(`第${i + 1}个段位缺少必要字段`);
-            continue;
+        config.forEach((rank: any, index: number) => {
+          if (!rank.rankName) {
+            errors.push(`第${index + 1}个段位缺少段位名称`);
           }
-          
-          if (rankIds.has(rank.id)) {
-            errors.push(`段位ID ${rank.id} 重复`);
+          if (typeof rank.minPoints !== 'number') {
+            errors.push(`第${index + 1}个段位的最小积分必须是数字`);
           }
-          rankIds.add(rank.id);
-          
-          if (rankOrders.has(rank.rankOrder)) {
-            errors.push(`段位顺序 ${rank.rankOrder} 重复`);
+          if (typeof rank.maxPoints !== 'number') {
+            errors.push(`第${index + 1}个段位的最大积分必须是数字`);
           }
-          rankOrders.add(rank.rankOrder);
-          
           if (rank.minPoints >= rank.maxPoints) {
-            errors.push(`段位 ${rank.rankName} 的最小积分不能大于等于最大积分`);
+            errors.push(`第${index + 1}个段位的最小积分必须小于最大积分`);
           }
-        }
+        });
       }
     }
-    
+
     res.json({
-      success: true,
-      data: {
-        valid: errors.length === 0,
-        errors
-      }
+      success: errors.length === 0,
+      errors,
+      message: errors.length === 0 ? '配置验证通过' : '配置验证失败'
     } as ApiResponse);
+
   } catch (error) {
     console.error('验证配置失败:', error);
     res.status(500).json({

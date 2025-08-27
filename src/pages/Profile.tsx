@@ -4,6 +4,7 @@ import { User, Calendar, Trophy, TrendingUp, ArrowLeft, Clock, Users, Target } f
 import { userApi } from '../lib/api';
 import PointsChart from '../components/PointsChart';
 import PositionChart from '../components/PositionChart';
+import PointsDisplay from '../components/PointsDisplay';
 import Avatar from '../components/Avatar';
 import { useAuthStore } from '../stores/authStore';
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
@@ -43,6 +44,7 @@ interface UserHistory {
       rawPoints: number;
       umaPoints: number;
       rankPointsChange: number;
+      originalRankPointsChange?: number; // 原始积分变化（未应用新手保护）
       position: number;
     };
     allPlayers: Array<{
@@ -73,6 +75,7 @@ interface UserHistory {
     wins: number;
     averagePosition: string;
     totalPointsChange: number;
+    originalTotalPointsChange?: number; // 原始积分变化（未应用新手保护）
     currentPoints: number;
     currentRank: number;
   };
@@ -291,10 +294,12 @@ const Profile: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs sm:text-sm font-medium text-gray-600">积分变化</p>
-                <p className={`text-lg sm:text-2xl font-bold ${
-                  stats.totalPointsChange >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {stats.totalPointsChange >= 0 ? '+' : ''}{stats.totalPointsChange}
+                <p className="text-lg sm:text-2xl font-bold">
+                  <PointsDisplay 
+                    pointsChange={stats.totalPointsChange}
+                    originalPointsChange={stats.originalTotalPointsChange}
+                    showSign={true}
+                  />
                 </p>
               </div>
               <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500" />
@@ -341,7 +346,11 @@ const Profile: React.FC = () => {
                             {history.gamePlayer.finalScore?.toLocaleString() || '0'}
                           </p>
                           <p className="text-sm text-gray-600">
-                            {(history.gamePlayer.rankPointsChange || 0) >= 0 ? '+' : ''}{history.gamePlayer.rankPointsChange || 0} 积分
+                            <PointsDisplay 
+                              pointsChange={history.gamePlayer.rankPointsChange || 0}
+                              originalPointsChange={history.gamePlayer.originalRankPointsChange}
+                              showSign={true}
+                            /> 积分
                           </p>
                         </div>
                       </div>
@@ -369,10 +378,12 @@ const Profile: React.FC = () => {
                         </div>
                         <div>
                           <span className="text-gray-600">积分变化:</span>
-                          <span className={`ml-2 font-medium ${
-                            (history.gamePlayer.rankPointsChange || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {(history.gamePlayer.rankPointsChange || 0) >= 0 ? '+' : ''}{history.gamePlayer.rankPointsChange || 0}
+                          <span className="ml-2 font-medium">
+                            <PointsDisplay 
+                              pointsChange={history.gamePlayer.rankPointsChange || 0}
+                              originalPointsChange={history.gamePlayer.originalRankPointsChange}
+                              showSign={true}
+                            />
                           </span>
                         </div>
                       </div>

@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, Trophy, Users, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
-import { GameDetail } from '../../shared/types';
+import { Calendar, Users, Trophy, Clock, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
+import { GameDetail, UserRole } from '../../shared/types';
 import { gamesApi } from '../lib/api';
 import HeaderBar from '../components/HeaderBar';
+import PointsDisplay from '../components/PointsDisplay';
 import ScrollToTop from '../components/ScrollToTop';
+import ConfirmDialog from '../components/ConfirmDialog';
+import { useConfirm } from '../hooks/useConfirm';
 
 interface MatchHistoryState {
   games: GameDetail[];
@@ -18,7 +23,7 @@ interface MatchHistoryState {
 const ITEMS_PER_PAGE = 10;
 
 const MatchHistory: React.FC = () => {
-  const navigate = useNavigate();
+  const { user: currentUser } = useAuthStore();
   const [state, setState] = useState<MatchHistoryState>({
     games: [],
     loading: true,
@@ -27,6 +32,7 @@ const MatchHistory: React.FC = () => {
     totalPages: 1,
     sortOrder: 'desc'
   });
+  const { confirmState, showConfirm } = useConfirm();
 
   // 获取比赛记录数据
   const fetchGames = async () => {
@@ -117,6 +123,46 @@ const MatchHistory: React.FC = () => {
   // 分页处理
   const handlePageChange = (page: number) => {
     setState(prev => ({ ...prev, currentPage: page }));
+  };
+
+  // 删除比赛记录
+  const deleteGame = async (gameId: string, gameDate: string) => {
+    // 使用自定义确认对话框
+    const confirmed = await showConfirm({
+      title: '删除比赛记录确认',
+      message: `确定要删除 ${formatDate(gameDate)} 的比赛记录吗？\n\n此操作不可撤销，将会：\n- 删除比赛记录\n- 清除相关积分缓存\n- 重新计算所有玩家积分`,
+      confirmText: '删除',
+      cancelText: '取消',
+      type: 'danger'
+    });
+    
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/games/${gameId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('删除比赛记录失败');
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        toast.success('比赛记录删除成功');
+        // 重新获取数据
+        fetchGames();
+      } else {
+        toast.error(data.error || '删除比赛记录失败');
+      }
+    } catch (error) {
+      console.error('删除比赛记录失败:', error);
+      toast.error('删除比赛记录失败');
+    }
   };
 
   // 获取当前页数据
@@ -218,9 +264,20 @@ const MatchHistory: React.FC = () => {
                             <Users className="w-4 h-4 text-indigo-600" />
                             <span className="font-medium text-gray-800">{gameDetail.game.gameType}</span>
                           </div>
-                          <div className="flex items-center space-x-1 text-gray-500">
-                            <Clock className="w-3 h-3" />
-                            <span className="text-xs">{formatDate(gameDetail.game.createdAt)}</span>
+                          <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-1 text-gray-500">
+                              <Clock className="w-3 h-3" />
+                              <span className="text-xs">{formatDate(gameDetail.game.createdAt)}</span>
+                            </div>
+                            {currentUser?.role === UserRole.SUPER_ADMIN && (
+                              <button
+                                onClick={() => deleteGame(gameDetail.game.id, gameDetail.game.createdAt)}
+                                className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                title="删除比赛记录"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -235,19 +292,29 @@ const MatchHistory: React.FC = () => {
                                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getPositionColor(player.position)}`}>
                                   {getPositionText(player.position)}
                                 </span>
-                                <Link
-                                  to={`/profile/${player.userId}`}
-                                  className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors truncate"
-                                >
-                                  {player.user?.nickname || player.user?.username || '未知玩家'}
-                                </Link>
+                                {player.user ? (
+                                  <Link
+                                    to={`/profile/${player.userId}`}
+                                    className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors truncate"
+                                  >
+                                    {player.user.nickname || player.user.username || '未知玩家'}
+                                  </Link>
+                                ) : (
+                                  <span className="text-sm font-medium text-gray-500 truncate">
+                                    已删除
+                                  </span>
+                                )}
                               </div>
                               <div className="text-right flex-shrink-0 ml-2">
                                 <div className="text-sm font-semibold text-gray-900">
                                   {player.finalScore.toLocaleString()}
                                 </div>
-                                <div className={`text-xs font-medium ${getPointsChangeColor(player.rankPointsChange)}`}>
-                                  {player.rankPointsChange > 0 ? '+' : ''}{player.rankPointsChange}
+                                <div className="text-xs font-medium">
+                                  <PointsDisplay 
+                                    pointsChange={player.rankPointsChange}
+                                    originalPointsChange={player.originalRankPointsChange}
+                                    showSign={true}
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -263,9 +330,20 @@ const MatchHistory: React.FC = () => {
                             <Users className="w-5 h-5 text-indigo-600" />
                             <span className="font-semibold text-lg text-gray-800">{gameDetail.game.gameType}</span>
                           </div>
-                          <div className="flex items-center space-x-2 text-gray-500">
-                            <Clock className="w-4 h-4" />
-                            <span className="text-sm">{formatDate(gameDetail.game.createdAt)}</span>
+                          <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-2 text-gray-500">
+                              <Clock className="w-4 h-4" />
+                              <span className="text-sm">{formatDate(gameDetail.game.createdAt)}</span>
+                            </div>
+                            {currentUser?.role === UserRole.SUPER_ADMIN && (
+                              <button
+                                onClick={() => deleteGame(gameDetail.game.id, gameDetail.game.createdAt)}
+                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                title="删除比赛记录"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -284,12 +362,18 @@ const MatchHistory: React.FC = () => {
                               </div>
 
                               <div className="mb-3">
-                                <Link
-                                  to={`/profile/${player.userId}`}
-                                  className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer block truncate"
-                                >
-                                  {player.user?.nickname || player.user?.username || '未知玩家'}
-                                </Link>
+                                {player.user ? (
+                                  <Link
+                                    to={`/profile/${player.userId}`}
+                                    className="font-medium text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer block truncate"
+                                  >
+                                    {player.user.nickname || player.user.username || '未知玩家'}
+                                  </Link>
+                                ) : (
+                                  <span className="font-medium text-gray-500 block truncate">
+                                    已删除
+                                  </span>
+                                )}
                               </div>
 
                               <div className="space-y-1">
@@ -301,8 +385,12 @@ const MatchHistory: React.FC = () => {
                                 </div>
                                 <div className="flex justify-between items-center">
                                   <span className="text-xs text-gray-600">积分:</span>
-                                  <span className={`text-sm font-semibold ${getPointsChangeColor(player.rankPointsChange)}`}>
-                                    {player.rankPointsChange > 0 ? '+' : ''}{player.rankPointsChange}
+                                  <span className="text-sm font-semibold">
+                                    <PointsDisplay 
+                                      pointsChange={player.rankPointsChange}
+                                      originalPointsChange={player.originalRankPointsChange}
+                                      showSign={true}
+                                    />
                                   </span>
                                 </div>
                               </div>
@@ -359,6 +447,18 @@ const MatchHistory: React.FC = () => {
       </div>
       
       <ScrollToTop />
+      
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        onConfirm={confirmState.onConfirm}
+        onCancel={confirmState.onCancel}
+        type={confirmState.type}
+      />
     </div>
   );
 };

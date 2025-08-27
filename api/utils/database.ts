@@ -12,12 +12,19 @@ import {
   RankInfo, 
   UserRole 
 } from '../../shared/types.js';
-import { getUmaPoints, getBasePoints, getRanksConfig, getInitialPoints, getTotalPoints } from './configManager.js';
+import { getUmaPoints, getBasePoints, getRanksConfig, getInitialPoints, getTotalPoints, getNewbieProtectionMaxRank } from './configManager.js';
 import { 
   userFileStorage, 
   gameFileStorage,
   initializeDataFiles 
 } from './fileStorage.js';
+import { 
+  getCachedUserStats, 
+  getCachedUserPointHistory, 
+  getCachedAllUserStats,
+  invalidateCache
+} from './pointsCache.js';
+import { setPointsCacheInvalidator } from './configManager.js';
 
 // 内存缓存（提高性能）
 let users: User[] = [];
@@ -36,6 +43,10 @@ export async function initializeDatabase(): Promise<void> {
   try {
     await initializeDataFiles();
     await loadAllData();
+    
+    // 设置配置变更时的缓存失效回调
+    setPointsCacheInvalidator(invalidateCache);
+    
     isInitialized = true;
     console.log('数据库初始化成功');
   } catch (error) {
@@ -155,36 +166,79 @@ export function calculateMahjongPoints(scores: number[]): MahjongCalculation[] {
   return results;
 }
 
-// 计算用户统计信息（实时计算）
-export function calculateUserStats(userId: string): UserStats {
-  // 获取用户参与的所有对局
+// 计算麻将积分（带新手保护）
+export function calculateMahjongPointsWithProtection(scores: number[], playerIds: string[]): MahjongCalculation[] {
+  // 验证总分
+  const totalScore = scores.reduce((sum, score) => sum + score, 0);
+  const expectedTotal = getTotalPoints();
+  if (totalScore !== expectedTotal) {
+    throw new Error(`四人总分必须为${expectedTotal}点`);
+  }
+
+  // 验证玩家ID数量
+  if (playerIds.length !== 4) {
+    throw new Error('必须提供4个玩家ID');
+  }
+
+  // 创建玩家数据并排序
+  const players = scores.map((score, index) => ({ score, index, playerId: playerIds[index] }));
+  players.sort((a, b) => b.score - a.score);
+
+  // 计算每个玩家的积分
+  const results: MahjongCalculation[] = new Array(4);
+  
+  players.forEach((player, position) => {
+    // 计算原点和马点
+    const basePoints = getBasePoints();
+    const umaPoints = getUmaPoints();
+    
+    const rawPoints = (player.score - basePoints) / 1000;
+    const umaPointsValue = umaPoints[position];
+    const originalRankPoints = Math.ceil(rawPoints + umaPointsValue);
+    let rankPoints = originalRankPoints;
+    let isNewbieProtected = false;
+    
+    // 新手保护逻辑：检查玩家当前段位
+    const user = users.find(u => u.id === player.playerId);
+    if (user) {
+      // 计算玩家当前积分（不包括本局）
+      const currentPoints = calculateUserCurrentPoints(player.playerId);
+      const rankInfo = parseRankInfo(currentPoints);
+      const newbieProtectionMaxRank = getNewbieProtectionMaxRank();
+      
+      // 如果玩家在新手保护范围内且积分为负，则设为0
+      if (rankInfo.rankConfig.rankOrder <= newbieProtectionMaxRank && originalRankPoints < 0) {
+        rankPoints = 0;
+        isNewbieProtected = true;
+      }
+    }
+    
+    results[player.index] = {
+      finalScore: player.score,
+      rawPoints: parseFloat(rawPoints.toFixed(1)),
+      umaPoints: umaPointsValue,
+      rankPoints,
+      originalRankPoints,
+      isNewbieProtected,
+      position: position + 1
+    };
+  });
+
+  return results;
+}
+
+// 计算用户当前积分（不包括正在进行的对局）
+function calculateUserCurrentPoints(userId: string): number {
   const userGames = games.filter(game => 
     game.players.some(player => player.userId === userId)
   );
 
-  if (userGames.length === 0) {
-    const initialPoints = getInitialPoints();
-    return {
-      totalPoints: initialPoints, // 初始积分
-      rankLevel: 16,
-      rankPoints: 0,
-      gamesPlayed: 0,
-      wins: 0,
-      averagePosition: 0,
-      currentRank: '四段'
-    };
-  }
-
-  // 计算总积分变化
   let totalPointsChange = 0;
-  let wins = 0;
-  let totalPosition = 0;
-
   userGames.forEach(game => {
     const userPlayer = game.players.find(player => player.userId === userId);
     if (userPlayer) {
       try {
-        // 计算这局的积分变化
+        // 使用原始计算方法（不带保护）来计算历史积分
         const calculation = calculateMahjongPoints(
           game.players.map(p => p.finalScore)
         );
@@ -194,90 +248,25 @@ export function calculateUserStats(userId: string): UserStats {
         
         if (userCalc) {
           totalPointsChange += userCalc.rankPoints;
-          totalPosition += userCalc.position;
-          if (userCalc.position === 1) wins++;
         }
       } catch (error) {
-        // 如果历史对局数据不符合当前配置，跳过这局但记录警告
+        // 如果历史对局数据不符合当前配置，跳过这局
         console.warn(`跳过不符合当前配置的历史对局 ${game.id}:`, error.message);
-        // 仍然计算位置统计，但不计算积分变化
-        totalPosition += userPlayer.position;
-        if (userPlayer.position === 1) wins++;
       }
     }
   });
 
-  const totalPoints = getInitialPoints() + totalPointsChange; // 初始积分 + 积分变化
-  const rankInfo = parseRankInfo(totalPoints);
-  const averagePosition = userGames.length > 0 ? totalPosition / userGames.length : 0;
-
-  return {
-    totalPoints,
-    rankLevel: rankInfo.rankConfig.rankOrder,
-    rankPoints: totalPoints - rankInfo.rankConfig.minPoints,
-    gamesPlayed: userGames.length,
-    wins,
-    averagePosition: parseFloat(averagePosition.toFixed(2)),
-    currentRank: rankInfo.displayName
-  };
+  return getInitialPoints() + totalPointsChange;
 }
 
-// 计算用户积分历史（实时计算）
-export function calculateUserPointHistory(userId: string): PointHistory[] {
-  const userGames = games
-    .filter(game => game.players.some(player => player.userId === userId))
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+// 计算用户统计信息（使用缓存系统）
+export async function calculateUserStats(userId: string): Promise<UserStats> {
+  return await getCachedUserStats(userId, users, games);
+}
 
-  const history: PointHistory[] = [];
-  let currentPoints = getInitialPoints(); // 初始积分
-
-  userGames.forEach(game => {
-    const userPlayer = game.players.find(player => player.userId === userId);
-    if (userPlayer) {
-      try {
-        const calculation = calculateMahjongPoints(
-          game.players.map(p => p.finalScore)
-        );
-        const userCalc = calculation.find((_, index) => 
-          game.players[index].userId === userId
-        );
-        
-        if (userCalc) {
-          const pointsBefore = currentPoints;
-          const pointsAfter = currentPoints + userCalc.rankPoints;
-          const rankBefore = getRankByPoints(pointsBefore);
-          const rankAfter = getRankByPoints(pointsAfter);
-          
-          // 获取对手信息
-          const opponents = game.players
-            .filter(p => p.userId !== userId)
-            .map(p => {
-              const user = users.find(u => u.id === p.userId);
-              return user?.nickname || user?.username || '未知玩家';
-            });
-
-          history.push({
-            gameId: game.id,
-            pointsBefore,
-            pointsAfter,
-            pointsChange: userCalc.rankPoints,
-            rankBefore,
-            rankAfter,
-            gameDate: game.createdAt,
-            opponents
-          });
-
-          currentPoints = pointsAfter;
-        }
-      } catch (error) {
-        // 如果历史对局数据不符合当前配置，跳过这局但记录警告
-        console.warn(`跳过不符合当前配置的历史对局 ${game.id}:`, error.message);
-        // 不添加到历史记录中，但保持积分不变
-      }
-    }
-  });
-
-  return history;
+// 计算用户积分历史（使用缓存系统）
+export async function calculateUserPointHistory(userId: string): Promise<PointHistory[]> {
+  return await getCachedUserPointHistory(userId, users, games);
 }
 
 // 用户数据库操作
@@ -297,8 +286,19 @@ export const userDb = {
 
   async findAll(): Promise<UserWithStats[]> {
     await loadAllData();
+    const allUserStats = await getCachedAllUserStats(users, games);
+    
     return users.map(user => {
-      const stats = calculateUserStats(user.id);
+      const stats = allUserStats.get(user.id) || {
+        totalPoints: getInitialPoints(),
+        rankLevel: 16,
+        rankPoints: 0,
+        gamesPlayed: 0,
+        wins: 0,
+        averagePosition: 0,
+        currentRank: '四段'
+      };
+      
       return {
         ...user,
         stats,
@@ -318,7 +318,7 @@ export const userDb = {
     const user = users.find(user => user.id === id);
     if (!user) return null;
     
-    const stats = calculateUserStats(user.id);
+    const stats = await calculateUserStats(user.id);
     return {
       ...user,
       stats,
@@ -337,7 +337,7 @@ export const userDb = {
     const user = users.find(user => user.username === username);
     if (!user) return null;
     
-    const stats = calculateUserStats(user.id);
+    const stats = await calculateUserStats(user.id);
     return {
       ...user,
       stats,
@@ -382,11 +382,16 @@ export const gameDb = {
     await loadAllData();
     const game: GameRecord = {
       id: generateId(),
-      ...gameData,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      ...gameData
     };
+    
     games.push(game);
     await gameFileStorage.save(games);
+    
+    // 新增对局后，清空积分缓存
+    invalidateCache();
+    
     return game;
   },
 
@@ -400,6 +405,23 @@ export const gameDb = {
   async findById(id: string): Promise<GameRecord | null> {
     await loadAllData();
     return games.find(game => game.id === id) || null;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    await loadAllData();
+    const gameIndex = games.findIndex(game => game.id === id);
+    
+    if (gameIndex === -1) {
+      return false;
+    }
+    
+    games.splice(gameIndex, 1);
+    await gameFileStorage.save(games);
+    
+    // 删除对局后，清空积分缓存
+    invalidateCache();
+    
+    return true;
   }
 };
 
@@ -410,8 +432,10 @@ export const gamePlayerDb = {
     if (!game) return [];
 
     try {
-      const calculations = calculateMahjongPoints(
-        game.players.map(p => p.finalScore)
+      // 使用带新手保护的计算方法
+      const calculations = calculateMahjongPointsWithProtection(
+        game.players.map(p => p.finalScore),
+        game.players.map(p => p.userId)
       );
 
       return game.players.map((player, index) => {
@@ -424,7 +448,9 @@ export const gamePlayerDb = {
           user,
           rawPoints: calc.rawPoints,
           umaPoints: calc.umaPoints,
-          rankPointsChange: calc.rankPoints
+          rankPointsChange: calc.rankPoints,
+          originalRankPointsChange: calc.originalRankPoints,
+          isNewbieProtected: calc.isNewbieProtected
         };
       });
     } catch (error) {
@@ -440,7 +466,9 @@ export const gamePlayerDb = {
           user,
           rawPoints: 0,
           umaPoints: 0,
-          rankPointsChange: 0
+          rankPointsChange: 0,
+          originalRankPointsChange: 0,
+          isNewbieProtected: false
         };
       });
     }
@@ -455,24 +483,50 @@ export const gamePlayerDb = {
     const result: GamePlayerDetail[] = [];
     
     for (const game of userGames) {
-      const calculations = calculateMahjongPoints(
-        game.players.map(p => p.finalScore)
-      );
-      
-      const playerIndex = game.players.findIndex(p => p.userId === userId);
-      if (playerIndex !== -1) {
-        const player = game.players[playerIndex];
-        const calc = calculations[playerIndex];
-        const user = users.find(u => u.id === player.userId);
+      try {
+        // 使用带新手保护的计算方法
+        const calculations = calculateMahjongPointsWithProtection(
+          game.players.map(p => p.finalScore),
+          game.players.map(p => p.userId)
+        );
         
-        result.push({
-          ...player,
-          id: `${game.id}_${player.userId}`,
-          user,
-          rawPoints: calc.rawPoints,
-          umaPoints: calc.umaPoints,
-          rankPointsChange: calc.rankPoints
-        });
+        const playerIndex = game.players.findIndex(p => p.userId === userId);
+        if (playerIndex !== -1) {
+          const player = game.players[playerIndex];
+          const calc = calculations[playerIndex];
+          const user = users.find(u => u.id === player.userId);
+          
+          result.push({
+            ...player,
+            id: `${game.id}_${player.userId}`,
+            user,
+            rawPoints: calc.rawPoints,
+            umaPoints: calc.umaPoints,
+            rankPointsChange: calc.rankPoints,
+            originalRankPointsChange: calc.originalRankPoints,
+            isNewbieProtected: calc.isNewbieProtected
+          });
+        }
+      } catch (error) {
+        // 如果历史对局数据不符合当前配置，返回基础信息但不计算积分变化
+        console.warn(`跳过不符合当前配置的历史对局 ${game.id}:`, error.message);
+        
+        const playerIndex = game.players.findIndex(p => p.userId === userId);
+        if (playerIndex !== -1) {
+          const player = game.players[playerIndex];
+          const user = users.find(u => u.id === player.userId);
+          
+          result.push({
+            ...player,
+            id: `${game.id}_${player.userId}`,
+            user,
+            rawPoints: 0,
+            umaPoints: 0,
+            rankPointsChange: 0,
+            originalRankPointsChange: 0,
+            isNewbieProtected: false
+          });
+        }
       }
     }
 
@@ -483,7 +537,7 @@ export const gamePlayerDb = {
 // 积分历史数据库操作（兼容性）
 export const pointHistoryDb = {
   async findByUserId(userId: string): Promise<PointHistory[]> {
-    return calculateUserPointHistory(userId);
+    return await calculateUserPointHistory(userId);
   }
 };
 

@@ -261,7 +261,7 @@ router.get('/:id/history', async (req: Request, res: Response) => {
     }
 
     // 获取用户的积分历史记录（实时计算）
-    const pointHistories = calculateUserPointHistory(id);
+    const pointHistories = await calculateUserPointHistory(id);
     
     // 获取用户的对局记录
     const userGamePlayers = await gamePlayerDb.findByUserId(id);
@@ -292,12 +292,12 @@ router.get('/:id/history', async (req: Request, res: Response) => {
     const paginatedHistories = gameHistories.slice(Number(offset), Number(offset) + Number(limit));
     
     // 计算统计数据（使用实时计算的用户统计）
-    const userStats = calculateUserStats(id);
+    const userStats = await calculateUserStats(id);
     const stats = {
       totalGames: userStats.gamesPlayed,
       wins: userStats.wins,
       averagePosition: userStats.averagePosition.toString(),
-      totalPointsChange: userStats.totalPoints - 1800, // 总积分变化 = 当前积分 - 初始积分
+      totalPointsChange: userStats.totalPoints - 20, // 总积分变化 = 当前积分 - 初始积分
       currentPoints: userStats.totalPoints,
       currentRank: userStats.rankLevel
     };

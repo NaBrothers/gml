@@ -101,6 +101,8 @@ export interface GamePlayerDetail extends GamePlayerRecord {
   rawPoints: number;
   umaPoints: number;
   rankPointsChange: number;
+  originalRankPointsChange?: number; // 原始积分变化（未应用新手保护）
+  isNewbieProtected?: boolean; // 是否应用了新手保护
   pointsBefore?: number;
   pointsAfter?: number;
   rankBefore?: string;
@@ -113,6 +115,8 @@ export interface PointHistory {
   pointsBefore: number;
   pointsAfter: number;
   pointsChange: number;
+  originalPointsChange?: number; // 原始积分变化（未应用新手保护）
+  isNewbieProtected?: boolean; // 是否应用了新手保护
   rankBefore: string;
   rankAfter: string;
   gameDate: string;
@@ -169,6 +173,8 @@ export interface MahjongCalculation {
   rawPoints: number;
   umaPoints: number;
   rankPoints: number;
+  originalRankPoints?: number; // 原始积分变化（未应用新手保护）
+  isNewbieProtected?: boolean; // 是否应用了新手保护
   position: number;
 }
 
