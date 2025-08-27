@@ -15,7 +15,7 @@ const MouseTrail: React.FC = () => {
     const newPoint: TrailPoint = {
       x: e.clientX,
       y: e.clientY,
-      id: Date.now(),
+      id: Date.now() + Math.random(), // 添加随机数确保唯一性
       timestamp: Date.now()
     };
 

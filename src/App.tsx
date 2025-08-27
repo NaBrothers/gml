@@ -45,7 +45,7 @@ export default function App() {
 
   return (
     <Router>
-      <div className="flex">
+      <div className="flex min-h-screen">
         {/* 鼠标轨迹效果 - 仅在桌面端显示 */}
         <div className="hidden lg:block">
           <MouseTrail />
@@ -54,8 +54,8 @@ export default function App() {
         {/* 全局侧边栏 */}
         <Sidebar />
         
-        {/* 主内容区域 - 为桌面端侧边栏留出空间 */}
-        <div className="flex-1 md:pr-20 lg:pr-24">
+        {/* 主内容区域 - 移动端全屏，桌面端为侧边栏留出空间 */}
+        <div className="flex-1 w-full md:pr-20 lg:pr-24 min-h-screen">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />

@@ -46,6 +46,27 @@ const CurveChart: React.FC<CurveChartProps> = ({
   const [editingPointIndex, setEditingPointIndex] = useState<number | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [editPosition, setEditPosition] = useState<{ x: number; y: number } | null>(null);
+  const [containerSize, setContainerSize] = useState({ width, height });
+
+  // 响应式尺寸计算
+  useEffect(() => {
+    const updateSize = () => {
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        // 移动端：使用容器宽度减去padding，高度按比例缩放
+        const containerWidth = Math.min(window.innerWidth - 32, 400); // 32px为左右padding
+        const containerHeight = Math.min(containerWidth * 0.75, 300); // 3:4比例，最大300px
+        setContainerSize({ width: containerWidth, height: containerHeight });
+      } else {
+        // 桌面端：使用传入的尺寸
+        setContainerSize({ width, height });
+      }
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, [width, height]);
 
   // 准备图表数据
   const chartData = {
@@ -83,9 +104,9 @@ const CurveChart: React.FC<CurveChartProps> = ({
         position: 'top' as const,
         labels: {
           usePointStyle: true,
-          padding: 20,
+          padding: window.innerWidth < 768 ? 10 : 20, // 移动端减少padding
           font: {
-            size: 12
+            size: window.innerWidth < 768 ? 10 : 12 // 移动端减小字体
           }
         }
       },
@@ -124,8 +145,8 @@ const CurveChart: React.FC<CurveChartProps> = ({
           display: true,
           text: '段位序号',
           font: {
-            size: 14,
-            weight: 'bold'
+            size: window.innerWidth < 768 ? 12 : 14, // 移动端减小字体
+            weight: 'bold' as const
           }
         },
         grid: {
@@ -143,8 +164,8 @@ const CurveChart: React.FC<CurveChartProps> = ({
           display: true,
           text: '积分',
           font: {
-            size: 14,
-            weight: 'bold'
+            size: window.innerWidth < 768 ? 12 : 14, // 移动端减小字体
+            weight: 'bold' as const
           }
         },
         grid: {
@@ -256,7 +277,7 @@ const CurveChart: React.FC<CurveChartProps> = ({
     return (
       <div 
         className="flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
-        style={{ width, height }}
+        style={{ width: containerSize.width, height: containerSize.height }}
       >
         <div className="text-center text-gray-500">
           <div className="text-4xl mb-4">📊</div>
@@ -268,8 +289,8 @@ const CurveChart: React.FC<CurveChartProps> = ({
   }
 
   return (
-    <div className="relative">
-      <div style={{ width, height }}>
+    <div className="relative w-full flex justify-center">
+      <div style={{ width: containerSize.width, height: containerSize.height }}>
         <Scatter
           ref={chartRef}
           data={chartData}

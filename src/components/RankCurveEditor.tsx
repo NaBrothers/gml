@@ -26,7 +26,7 @@ const RankCurveEditor: React.FC<RankCurveEditorProps> = ({
     isDirty: false
   });
   
-  const [editMode, setEditMode] = useState<EditMode>('drag');
+  const [editMode, setEditMode] = useState<EditMode>('click');
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'chart' | 'function' | 'preview'>('chart');
 
@@ -227,14 +227,16 @@ const RankCurveEditor: React.FC<RankCurveEditorProps> = ({
                 </p>
               </div>
               
-              <div className="flex justify-center">
-                <CurveChart
-                  points={curveConfig.points}
-                  onPointUpdate={handlePointUpdate}
-                  width={800}
-                  height={500}
-                  readonly={previewMode}
-                />
+              <div className="flex justify-center w-full overflow-x-auto">
+                <div className="min-w-0 w-full flex justify-center">
+                  <CurveChart
+                    points={curveConfig.points}
+                    onPointUpdate={handlePointUpdate}
+                    width={800}
+                    height={500}
+                    readonly={previewMode}
+                  />
+                </div>
               </div>
               
               {!previewMode && (
