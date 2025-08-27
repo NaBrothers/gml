@@ -181,3 +181,78 @@ export interface MahjongCalculation {
 // 兼容性类型定义（为了向后兼容，逐步迁移时使用）
 export interface Game extends GameRecord {}
 export interface GamePlayer extends GamePlayerDetail {}
+
+// 曲线配置相关类型定义
+
+// 曲线上的数据点
+export interface CurvePoint {
+  x: number; // 段位序号 (rankOrder)
+  y: number; // 积分值 (minPoints)
+  rankId: number; // 段位ID
+  rankName: string; // 段位名称
+}
+
+// 数学函数类型 - 简化为只支持自定义函数
+export type FunctionType = 'custom';
+
+// 自定义函数参数
+export interface CustomFunctionParam {
+  name: string; // 参数名称 (如 a, b, c)
+  value: number; // 参数值
+  description?: string; // 参数描述
+}
+
+// 段位范围配置
+export interface RankRangeConfig {
+  id: string; // 范围ID
+  name: string; // 范围名称
+  startRank: number; // 起始段位序号
+  endRank: number; // 结束段位序号
+  startPoints: number; // 起始积分
+  endPoints: number; // 结束积分
+  expression: string; // 数学表达式
+  params: CustomFunctionParam[]; // 函数参数
+  enabled: boolean; // 是否启用
+}
+
+// 函数参数配置
+export interface FunctionParams {
+  type: FunctionType;
+  // 全局范围设置（用于向后兼容）
+  startPoints: number; // 起始积分
+  endPoints: number; // 结束积分
+  startRank: number; // 起始段位序号
+  endRank: number; // 结束段位序号
+  // 自定义函数相关
+  customExpression?: string; // 自定义函数表达式
+  customParams?: CustomFunctionParam[]; // 自定义函数参数列表
+  // 多段式配置
+  rangeConfigs: RankRangeConfig[]; // 段位范围配置列表
+}
+
+// 曲线配置状态
+export interface CurveConfig {
+  points: CurvePoint[];
+  originalRanks: RankConfig[];
+  modifiedRanks: RankConfig[];
+  isDirty: boolean; // 是否有未保存的更改
+  lastSaved?: string; // 最后保存时间
+}
+
+// 配置验证结果
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+// 曲线编辑器的操作模式
+export type EditMode = 'click' | 'function' | 'manual';
+
+// 函数生成器的配置
+export interface FunctionGeneratorConfig {
+  selectedFunction: FunctionType;
+  params: FunctionParams;
+  previewPoints: CurvePoint[];
+  isGenerating: boolean;
+}

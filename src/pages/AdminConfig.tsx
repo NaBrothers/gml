@@ -11,11 +11,14 @@ import {
   Edit3,
   Database,
   Trophy,
-  Target
+  Target,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
-import { UserRole } from '../../shared/types';
+import { UserRole, RankConfig } from '../../shared/types';
 import HeaderBar from '../components/HeaderBar';
 import RankManagement from '../components/RankManagement';
+import RankCurveEditor from '../components/RankCurveEditor';
 import { toast } from 'sonner';
 
 interface ConfigData {
@@ -63,6 +66,7 @@ const AdminConfig: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [reloading, setReloading] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [rankEditMode, setRankEditMode] = useState<'table' | 'curve'>('table');
 
   // 获取配置数据
   const fetchConfig = async () => {
@@ -140,6 +144,55 @@ const AdminConfig: React.FC = () => {
     } catch (error) {
       console.error('保存配置失败:', error);
       toast.error('网络错误: ' + (error instanceof Error ? error.message : '未知错误'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 保存段位配置的函数
+  const saveRankConfig = async (updatedRanks: RankConfig[]) => {
+    try {
+      setSaving(true);
+      const token = localStorage.getItem('auth_token');
+      
+      if (!token) {
+        toast.error('未找到认证令牌，请重新登录');
+        return;
+      }
+      
+      const response = await fetch('/api/config/ranks', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedRanks)
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        if (result.success) {
+          // 更新本地配置
+          setConfig(prev => prev ? { ...prev, ranks: updatedRanks } : null);
+          toast.success('段位配置保存成功');
+        } else {
+          toast.error('保存失败: ' + (result.error || '未知错误'));
+          throw new Error(result.error || '保存失败');
+        }
+      } else {
+        if (response.status === 401) {
+          toast.error('认证失败，请重新登录');
+        } else if (response.status === 403) {
+          toast.error('权限不足，需要超级管理员权限');
+        } else {
+          toast.error(`保存失败 (${response.status}): ${result.error || '未知错误'}`);
+        }
+        throw new Error(`HTTP ${response.status}: ${result.error || '保存失败'}`);
+      }
+    } catch (error) {
+      console.error('保存段位配置失败:', error);
+      throw error; // 重新抛出错误，让调用者处理
     } finally {
       setSaving(false);
     }
@@ -248,7 +301,7 @@ const AdminConfig: React.FC = () => {
       <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* 顶部操作栏 */}
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 mb-8 border border-white/20 shadow-lg">
-          <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => setPreviewMode(!previewMode)}
@@ -271,15 +324,46 @@ const AdminConfig: React.FC = () => {
                 <span>重新加载</span>
               </button>
               
-              <button
-                onClick={() => saveConfig(activeTab)}
-                disabled={saving || previewMode}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                <span>保存配置</span>
-              </button>
+              {/* 只在非段位配置或表格模式下显示保存按钮 */}
+              {(activeTab !== 'ranks' || rankEditMode === 'table') && (
+                <button
+                  onClick={() => saveConfig(activeTab)}
+                  disabled={saving || previewMode}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>保存配置</span>
+                </button>
+              )}
             </div>
+
+            {/* 段位编辑模式切换 - 只在段位配置标签页显示 */}
+            {activeTab === 'ranks' && (
+              <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setRankEditMode('table')}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
+                    rankEditMode === 'table'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="text-sm font-medium">表格模式</span>
+                </button>
+                <button
+                  onClick={() => setRankEditMode('curve')}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-colors ${
+                    rankEditMode === 'curve'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span className="text-sm font-medium">曲线模式</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -516,21 +600,34 @@ const AdminConfig: React.FC = () => {
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-800">段位系统配置</h3>
-                <div className="text-sm text-gray-600">
-                  共 {config.ranks.length} 个段位
+                <div className="flex items-center space-x-4">
+                  <div className="text-sm text-gray-600">
+                    共 {config.ranks.length} 个段位
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    当前模式: {rankEditMode === 'table' ? '表格编辑' : '曲线编辑'}
+                  </div>
                 </div>
               </div>
               
-              <RankManagement 
-                ranks={config.ranks} 
-                previewMode={previewMode}
-                onRankUpdate={(updatedRank) => {
-                  const updatedRanks = config.ranks.map(rank => 
-                    rank.id === updatedRank.id ? updatedRank : rank
-                  );
-                  setConfig({ ...config, ranks: updatedRanks });
-                }}
-              />
+              {rankEditMode === 'table' ? (
+                <RankManagement 
+                  ranks={config.ranks} 
+                  previewMode={previewMode}
+                  onRankUpdate={(updatedRank) => {
+                    const updatedRanks = config.ranks.map(rank => 
+                      rank.id === updatedRank.id ? updatedRank : rank
+                    );
+                    setConfig({ ...config, ranks: updatedRanks });
+                  }}
+                />
+              ) : (
+                <RankCurveEditor
+                  ranks={config.ranks}
+                  onSave={saveRankConfig}
+                  previewMode={previewMode}
+                />
+              )}
             </div>
           )}
         </div>
