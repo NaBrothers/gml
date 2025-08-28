@@ -3,6 +3,7 @@ import { userDb, gamePlayerDb, pointHistoryDb, gameDb, calculateUserStats, calcu
 import { ApiResponse, UserWithStats, PointHistory, GamePlayerDetail, GameRecord, UserRole } from '../../shared/types.js';
 import { uploadAvatar, saveAvatarFile, deleteAvatarFile } from '../middleware/upload.js';
 import { authenticateToken } from './auth.js';
+import { getInitialPoints } from '../utils/configManager.js';
 
 const router = express.Router();
 
@@ -297,7 +298,7 @@ router.get('/:id/history', async (req: Request, res: Response) => {
       totalGames: userStats.gamesPlayed,
       wins: userStats.wins,
       averagePosition: userStats.averagePosition.toString(),
-      totalPointsChange: userStats.totalPoints - 20, // 总积分变化 = 当前积分 - 初始积分
+      totalPointsChange: userStats.totalPoints - getInitialPoints(), // 总积分变化 = 当前积分 - 初始积分
       currentPoints: userStats.totalPoints,
       currentRank: userStats.rankLevel
     };

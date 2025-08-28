@@ -69,8 +69,12 @@ body {
   -ms-text-size-adjust: 100%;
   /* 禁用移动端的触摸高亮 */
   -webkit-tap-highlight-color: transparent;
-  /* 禁用移动端的选择 */
+  /* 禁用移动端的选择，但保留表单元素的交互 */
   -webkit-touch-callout: none;
+}
+
+/* 禁用大部分元素的选择，但保留表单元素 */
+*:not(input):not(textarea):not(select) {
   -webkit-user-select: none;
   -khtml-user-select: none;
   -moz-user-select: none;
@@ -78,23 +82,30 @@ body {
   user-select: none;
 }
 
-/* 自定义滚动条 */
+/* 完全隐藏滚动条 - 不占用任何空间 */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 0px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, var(--sakura-pink), var(--sky-blue));
-  border-radius: 4px;
+  background: transparent;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, var(--sakura-dark), var(--sky-dark));
+/* 兼容其他浏览器 */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* 确保滚动功能正常 */
+html, body {
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* 玻璃态效果 */
@@ -294,12 +305,23 @@ body {
   }
   
   /* 移动端输入框优化 */
-  input, textarea, select {
+  input[type="text"], input[type="password"], input[type="email"], textarea, select {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
     border-radius: 0;
     font-size: 16px; /* 防止iOS缩放 */
+  }
+  
+  /* 保持单选框和复选框的原生外观 */
+  input[type="radio"], input[type="checkbox"] {
+    -webkit-appearance: auto;
+    -moz-appearance: auto;
+    appearance: auto;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
   }
 }
 

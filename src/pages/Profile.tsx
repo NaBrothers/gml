@@ -350,8 +350,14 @@ const Profile: React.FC = () => {
                               pointsChange={history.gamePlayer.rankPointsChange || 0}
                               originalPointsChange={history.gamePlayer.originalRankPointsChange}
                               showSign={true}
-                            /> 积分
+                            />{' '}积分
                           </p>
+                          {/* 段位变化显示 */}
+                          {history.pointHistory && history.pointHistory.rankBefore !== history.pointHistory.rankAfter && (
+                            <p className="text-xs text-blue-600 font-medium mt-1">
+                              {history.pointHistory.rankBefore} → {history.pointHistory.rankAfter}
+                            </p>
+                          )}
                         </div>
                       </div>
                       
@@ -368,26 +374,7 @@ const Profile: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                    
-                    {/* 移动端详细信息 */}
-                    <div className="block sm:hidden mt-3 pt-3 border-t border-gray-200">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">最终得分:</span>
-                          <span className="ml-2 font-medium">{history.gamePlayer.finalScore?.toLocaleString() || '0'}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">积分变化:</span>
-                          <span className="ml-2 font-medium">
-                            <PointsDisplay 
-                              pointsChange={history.gamePlayer.rankPointsChange || 0}
-                              originalPointsChange={history.gamePlayer.originalRankPointsChange}
-                              showSign={true}
-                            />
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                  
                   </div>
                 );
               }).filter(Boolean)}

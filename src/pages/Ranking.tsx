@@ -13,6 +13,7 @@ import ScrollToTop from '../components/ScrollToTop';
 
 interface Stats {
   rankStats: { [key: string]: number };
+  detailedRankStats: { [key: string]: number };
   totalUsers: number;
   totalGames: number;
   averagePoints: number;
@@ -37,7 +38,8 @@ const Ranking: React.FC = () => {
       if (response.success && response.data) {
         // 使用API返回的数据结构
         const adaptedStats: Stats = {
-          rankStats: (response.data as any).majorRankStats || {}, // 使用majorRankStats按大段位统计
+          rankStats: (response.data as any).majorRankStats || {}, // 段位分布使用大段位统计
+          detailedRankStats: (response.data as any).detailedRankStats || {}, // 最高段位使用详细段位统计
           totalUsers: response.data.totalUsers,
           totalGames: response.data.totalGames,
           averagePoints: response.data.averagePoints
@@ -131,7 +133,7 @@ const Ranking: React.FC = () => {
                       {(() => {
                         // 按段位等级排序，找到最高段位
                         const rankOrder = ['雀之气', '雀者', '雀师', '大雀师', '雀灵', '雀王', '雀皇', '雀宗', '雀尊', '雀圣', '雀帝'];
-                        const ranks = Object.keys(stats.rankStats);
+                        const ranks = Object.keys(stats.detailedRankStats); // 使用详细段位统计
                         if (ranks.length === 0) return '暂无';
                         
                         // 按段位等级和小段位排序
@@ -164,6 +166,7 @@ const Ranking: React.FC = () => {
                           return getMinorRank(b) - getMinorRank(a); // 降序
                         });
                         
+                        // 返回完整的段位名称，包括小段位
                         return sortedRanks[0];
                       })()
                       }

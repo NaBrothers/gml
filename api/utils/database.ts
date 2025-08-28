@@ -425,6 +425,39 @@ export const gameDb = {
   }
 };
 
+// 计算用户在特定时间点之前的积分
+function calculateUserPointsBeforeGame(userId: string, gameDate: string): number {
+  const userGames = games.filter(game => 
+    game.players.some(player => player.userId === userId) &&
+    new Date(game.createdAt).getTime() < new Date(gameDate).getTime()
+  );
+
+  let totalPointsChange = 0;
+  userGames.forEach(game => {
+    const userPlayer = game.players.find(player => player.userId === userId);
+    if (userPlayer) {
+      try {
+        // 使用原始计算方法（不带保护）来计算历史积分
+        const calculation = calculateMahjongPoints(
+          game.players.map(p => p.finalScore)
+        );
+        const userCalc = calculation.find((_, index) => 
+          game.players[index].userId === userId
+        );
+        
+        if (userCalc) {
+          totalPointsChange += userCalc.rankPoints;
+        }
+      } catch (error) {
+        // 如果历史对局数据不符合当前配置，跳过这局
+        console.warn(`跳过不符合当前配置的历史对局 ${game.id}:`, error.message);
+      }
+    }
+  });
+
+  return getInitialPoints() + totalPointsChange;
+}
+
 // 兼容性函数（为了向后兼容）
 export const gamePlayerDb = {
   async findByGameId(gameId: string): Promise<GamePlayerDetail[]> {
@@ -442,6 +475,12 @@ export const gamePlayerDb = {
         const user = users.find(u => u.id === player.userId);
         const calc = calculations[index];
         
+        // 计算该玩家在这场比赛之前的积分和段位
+        const pointsBefore = calculateUserPointsBeforeGame(player.userId, game.createdAt);
+        const pointsAfter = pointsBefore + calc.rankPoints;
+        const rankBefore = parseRankInfo(pointsBefore).displayName;
+        const rankAfter = parseRankInfo(pointsAfter).displayName;
+        
         return {
           ...player,
           id: `${gameId}_${player.userId}`,
@@ -450,7 +489,11 @@ export const gamePlayerDb = {
           umaPoints: calc.umaPoints,
           rankPointsChange: calc.rankPoints,
           originalRankPointsChange: calc.originalRankPoints,
-          isNewbieProtected: calc.isNewbieProtected
+          isNewbieProtected: calc.isNewbieProtected,
+          pointsBefore,
+          pointsAfter,
+          rankBefore,
+          rankAfter
         };
       });
     } catch (error) {

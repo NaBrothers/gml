@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { userDb, pointHistoryDb, parseRankInfo } from '../utils/database.js';
+import { userDb, gameDb, pointHistoryDb, parseRankInfo } from '../utils/database.js';
 import { ApiResponse, RankingUser, PointHistory } from '../../shared/types.js';
 
 const router = express.Router();
@@ -112,6 +112,7 @@ router.get('/history/:userId', async (req: Request, res: Response) => {
 router.get('/stats', async (req: Request, res: Response) => {
   try {
     const users = await userDb.findAll();
+    const games = await gameDb.findAll(); // 获取所有比赛记录
     
     // 统计各段位人数
     const majorRankStats: { [key: string]: number } = {};
@@ -124,7 +125,7 @@ router.get('/stats', async (req: Request, res: Response) => {
     });
 
     const totalUsers = users.length;
-    const totalGames = users.reduce((sum, user) => sum + user.stats.gamesPlayed, 0);
+    const totalGames = games.length; // 使用实际的比赛记录数量，而不是累加用户的参赛次数
     const averagePoints = totalUsers > 0 
       ? users.reduce((sum, user) => sum + user.stats.totalPoints, 0) / totalUsers 
       : 0;

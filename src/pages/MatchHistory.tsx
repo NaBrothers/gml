@@ -316,6 +316,18 @@ const MatchHistory: React.FC = () => {
                                     showSign={true}
                                   />
                                 </div>
+                                {/* 段位信息 */}
+                                {player.rankBefore && player.rankAfter && (
+                                  <div className="text-xs font-medium mt-1">
+                                    {player.rankBefore === player.rankAfter ? (
+                                      <span className="text-gray-600">{player.rankBefore}</span>
+                                    ) : (
+                                      <span className="text-blue-600">
+                                        {player.rankBefore} → {player.rankAfter}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -393,6 +405,21 @@ const MatchHistory: React.FC = () => {
                                     />
                                   </span>
                                 </div>
+                                {/* 段位信息 */}
+                                {player.rankBefore && player.rankAfter && (
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-xs text-gray-600">段位:</span>
+                                    <span className="text-xs font-medium">
+                                      {player.rankBefore === player.rankAfter ? (
+                                        <span className="text-gray-700">{player.rankBefore}</span>
+                                      ) : (
+                                        <span className="text-blue-600">
+                                          {player.rankBefore} → {player.rankAfter}
+                                        </span>
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
