@@ -13,9 +13,12 @@ import {
   Trophy,
   Target,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  Award,
+  Plus,
+  Trash2
 } from 'lucide-react';
-import { UserRole, RankConfig } from '../../shared/types';
+import { UserRole, RankConfig, AchievementConfig, Achievement } from '../../shared/types';
 import HeaderBar from '../components/HeaderBar';
 import RankManagement from '../components/RankManagement';
 import RankCurveEditor from '../components/RankCurveEditor';
@@ -44,13 +47,14 @@ interface ConfigData {
     minorRankType: 'dan' | 'star' | 'none';
     minorRankRange: [number, number];
   }>;
+  achievements: AchievementConfig;
 }
 
 const AdminConfig: React.FC = () => {
   // 所有Hooks必须在组件顶部调用，不能在条件语句之后
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'game' | 'ranks'>('game');
+  const [activeTab, setActiveTab] = useState<'game' | 'ranks' | 'achievements'>('game');
   const [config, setConfig] = useState<ConfigData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -89,7 +93,7 @@ const AdminConfig: React.FC = () => {
   };
 
   // 保存配置
-  const saveConfig = async (type: 'game' | 'ranks') => {
+  const saveConfig = async (type: 'game' | 'ranks' | 'achievements') => {
     if (!config) return;
     
     try {
@@ -114,7 +118,7 @@ const AdminConfig: React.FC = () => {
       
       if (response.ok) {
         if (result.success) {
-          toast.success(`${type === 'game' ? '游戏' : '段位'}配置保存成功`);
+          toast.success(`${type === 'game' ? '游戏' : type === 'ranks' ? '段位' : '成就'}配置保存成功`);
           // 保存成功后刷新页面
           setTimeout(() => {
             window.location.reload();
@@ -186,6 +190,57 @@ const AdminConfig: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  // 添加成就
+  const addAchievement = () => {
+    if (!config) return;
+    
+    const newAchievement: Achievement = {
+      id: `ACHIEVEMENT_CUSTOM_${Date.now()}`,
+      name: '新成就',
+      conditionType: 'final_score_gte',
+      conditionValue: 50000,
+      bonusPoints: 10,
+      description: '新成就描述',
+      category: 'single_game_glory'
+    };
+
+    setConfig({
+      ...config,
+      achievements: {
+        ...config.achievements,
+        achievements: [...config.achievements.achievements, newAchievement]
+      }
+    });
+  };
+
+  // 删除成就
+  const deleteAchievement = (achievementId: string) => {
+    if (!config) return;
+    
+    setConfig({
+      ...config,
+      achievements: {
+        ...config.achievements,
+        achievements: config.achievements.achievements.filter(a => a.id !== achievementId)
+      }
+    });
+  };
+
+  // 更新成就
+  const updateAchievement = (achievementId: string, updates: Partial<Achievement>) => {
+    if (!config) return;
+    
+    setConfig({
+      ...config,
+      achievements: {
+        ...config.achievements,
+        achievements: config.achievements.achievements.map(a => 
+          a.id === achievementId ? { ...a, ...updates } : a
+        )
+      }
+    });
   };
 
   // 重新加载配置
@@ -280,7 +335,8 @@ const AdminConfig: React.FC = () => {
 
   const tabs = [
     { id: 'game' as const, name: '游戏配置', icon: Database, description: '基础游戏参数设置' },
-    { id: 'ranks' as const, name: '段位配置', icon: Trophy, description: '段位系统管理' }
+    { id: 'ranks' as const, name: '段位配置', icon: Trophy, description: '段位系统管理' },
+    { id: 'achievements' as const, name: '成就配置', icon: Award, description: '成就系统管理' }
   ];
 
   return (
@@ -314,7 +370,7 @@ const AdminConfig: React.FC = () => {
               </button>
               
               {/* 只在非段位配置或表格模式下显示保存按钮 */}
-              {(activeTab !== 'ranks' || rankEditMode === 'table') && (
+              {activeTab !== 'ranks' && (
                 <button
                   onClick={() => saveConfig(activeTab)}
                   disabled={saving || previewMode}
@@ -541,6 +597,192 @@ const AdminConfig: React.FC = () => {
                   previewMode={previewMode}
                 />
               )}
+            </div>
+          )}
+
+          {/* 成就配置面板 */}
+          {activeTab === 'achievements' && (
+            <div className="space-y-6">
+              {/* 成就系统开关 */}
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-800">成就系统设置</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={config?.achievements?.enabled || false}
+                        onChange={(e) => setConfig(config ? {
+                          ...config,
+                          achievements: { ...config.achievements, enabled: e.target.checked }
+                        } : null)}
+                        disabled={previewMode}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">启用成就系统</span>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">连胜额外奖励/局</label>
+                    <input
+                      type="number"
+                      value={config?.achievements?.winStreakExtraBonusPerGame || 5}
+                      onChange={(e) => setConfig(config ? {
+                        ...config,
+                        achievements: { 
+                          ...config.achievements, 
+                          winStreakExtraBonusPerGame: parseInt(e.target.value) || 5 
+                        }
+                      } : null)}
+                      disabled={previewMode}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">连败额外奖励/局</label>
+                    <input
+                      type="number"
+                      value={config?.achievements?.loseStreakExtraBonusPerGame || 3}
+                      onChange={(e) => setConfig(config ? {
+                        ...config,
+                        achievements: { 
+                          ...config.achievements, 
+                          loseStreakExtraBonusPerGame: parseInt(e.target.value) || 3 
+                        }
+                      } : null)}
+                      disabled={previewMode}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 成就列表 */}
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-800">成就管理</h3>
+                  <button
+                    onClick={addAchievement}
+                    disabled={previewMode}
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>添加成就</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {config?.achievements?.achievements?.map((achievement, index) => (
+                    <div key={achievement.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">成就名称</label>
+                          <input
+                            type="text"
+                            value={achievement.name}
+                            onChange={(e) => updateAchievement(achievement.id, { name: e.target.value })}
+                            disabled={previewMode}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">类别</label>
+                          <select
+                            value={achievement.category}
+                            onChange={(e) => updateAchievement(achievement.id, { 
+                              category: e.target.value as 'single_game_glory' | 'win_streak' | 'lose_streak' 
+                            })}
+                            disabled={previewMode}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                          >
+                            <option value="single_game_glory">单局高光</option>
+                            <option value="win_streak">连胜奖励</option>
+                            <option value="lose_streak">连败补偿</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">条件类型</label>
+                          <select
+                            value={achievement.conditionType}
+                            onChange={(e) => updateAchievement(achievement.id, { 
+                              conditionType: e.target.value as any 
+                            })}
+                            disabled={previewMode}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                          >
+                            <option value="final_score_gte">得分≥</option>
+                            <option value="final_score_lte">得分≤</option>
+                            <option value="position_eq">名次=</option>
+                            <option value="position_and_score">名次+得分</option>
+                            <option value="win_streak">连胜次数</option>
+                            <option value="lose_streak">连败次数</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">条件值</label>
+                          <input
+                            type="text"
+                            value={achievement.conditionValue}
+                            onChange={(e) => updateAchievement(achievement.id, { conditionValue: e.target.value })}
+                            disabled={previewMode}
+                            placeholder="如: 50000 或 1:40000"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">奖励积分</label>
+                          <input
+                            type="number"
+                            value={achievement.bonusPoints}
+                            onChange={(e) => updateAchievement(achievement.id, { 
+                              bonusPoints: parseInt(e.target.value) || 0 
+                            })}
+                            disabled={previewMode}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                          />
+                        </div>
+
+                        <div className="flex items-end">
+                          <button
+                            onClick={() => deleteAchievement(achievement.id)}
+                            disabled={previewMode}
+                            className="w-full px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4 mx-auto" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">描述</label>
+                        <input
+                          type="text"
+                          value={achievement.description}
+                          onChange={(e) => updateAchievement(achievement.id, { description: e.target.value })}
+                          disabled={previewMode}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {(!config?.achievements?.achievements || config.achievements.achievements.length === 0) && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Award className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                    <p>暂无成就配置</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -1,7 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { RankConfig } from '../../shared/types.js';
+import { 
+  RankConfig,
+  Achievement,
+  AchievementConfig
+} from '../../shared/types.js';
 
 // 导入缓存失效函数
 let invalidatePointsCache: (() => void) | null = null;
@@ -34,12 +38,14 @@ interface GameConfig {
 interface ConfigCache {
   game: GameConfig;
   ranks: RankConfig[];
+  achievements: AchievementConfig;
   lastModified: { [key: string]: number };
 }
 
 let configCache: ConfigCache = {
   game: {} as GameConfig,
   ranks: [],
+  achievements: {} as AchievementConfig,
   lastModified: {}
 };
 
@@ -74,10 +80,10 @@ function parseConfFile(filePath: string): { [key: string]: any } {
       config[key] = true;
     } else if (value === 'false') {
       config[key] = false;
-    } else if (!isNaN(Number(value))) {
+    } else if (!isNaN(Number(value)) && value !== '') {
       config[key] = Number(value);
-    } else if (value.includes(',')) {
-      // 处理数组值
+    } else if (value.includes(',') && !key.startsWith('ACHIEVEMENT_')) {
+      // 处理数组值，但排除成就配置（成就配置的逗号是分隔符，不是数组）
       config[key] = value.split(',').map(v => {
         const trimmed = v.trim();
         return !isNaN(Number(trimmed)) ? Number(trimmed) : trimmed;
@@ -145,6 +151,49 @@ function parseRanksConfig(filePath: string): RankConfig[] {
   return ranks.sort((a, b) => a.rankOrder - b.rankOrder);
 }
 
+// 解析成就配置
+function parseAchievementsConfig(filePath: string): AchievementConfig {
+  const rawConfig = parseConfFile(filePath);
+  const achievements: Achievement[] = [];
+  
+  console.log('解析成就配置，原始配置键数量:', Object.keys(rawConfig).length);
+
+  for (const [key, value] of Object.entries(rawConfig)) {
+    if (key.startsWith('ACHIEVEMENT_')) {
+      if (typeof value === 'string') {
+        const parts = value.split(',');
+        if (parts.length >= 5) {
+          const achievementId = key;
+          const category = key.includes('SINGLE_GAME_GLORY') ? 'single_game_glory' :
+                          key.includes('WIN_STREAK') ? 'win_streak' : 'lose_streak';
+          
+          const achievement: Achievement = {
+            id: achievementId,
+            name: parts[0].trim(),
+            conditionType: parts[1].trim() as any,
+            conditionValue: parts[2].trim(),
+            bonusPoints: parseInt(parts[3].trim()),
+            description: parts[4].trim(),
+            category
+          };
+          achievements.push(achievement);
+          console.log(`成功解析成就:`, achievement.name);
+        }
+      }
+    }
+  }
+
+  const config: AchievementConfig = {
+    achievements,
+    winStreakExtraBonusPerGame: Number(rawConfig.WIN_STREAK_EXTRA_BONUS_PER_GAME) || 5,
+    loseStreakExtraBonusPerGame: Number(rawConfig.LOSE_STREAK_EXTRA_BONUS_PER_GAME) || 3,
+    enabled: rawConfig.ACHIEVEMENTS_ENABLED === true || rawConfig.ACHIEVEMENTS_ENABLED === 'true'
+  };
+
+  console.log('成就配置解析完成，共', achievements.length, '个成就');
+  return config;
+}
+
 // 检查文件是否已修改
 function isFileModified(filePath: string, lastModified: number): boolean {
   try {
@@ -156,32 +205,82 @@ function isFileModified(filePath: string, lastModified: number): boolean {
 }
 
 // 加载配置文件
-async function loadConfig(forceReload: boolean = false): Promise<void> {
+async function loadConfig(force: boolean = false): Promise<void> {
+  const gameConfigPath = path.join(CONFIG_DIR, 'game.conf');
+  const ranksConfigPath = path.join(CONFIG_DIR, 'ranks.conf');
+  const achievementsConfigPath = path.join(CONFIG_DIR, 'achievements.conf');
+
   try {
-    const gameConfigPath = path.join(CONFIG_DIR, 'game.conf');
-    const ranksConfigPath = path.join(CONFIG_DIR, 'ranks.conf');
+    // 检查文件修改时间
+    const gameStats = fs.statSync(gameConfigPath);
+    const ranksStats = fs.statSync(ranksConfigPath);
+    const achievementsStats = fs.existsSync(achievementsConfigPath) ? fs.statSync(achievementsConfigPath) : null;
 
-    // 检查文件是否被修改
-    const gameModified = forceReload || isFileModified(gameConfigPath, configCache.lastModified.game || 0);
-    const ranksModified = forceReload || isFileModified(ranksConfigPath, configCache.lastModified.ranks || 0);
+    const gameModified = gameStats.mtimeMs;
+    const ranksModified = ranksStats.mtimeMs;
+    const achievementsModified = achievementsStats?.mtimeMs || 0;
 
-    if (gameModified) {
-      configCache.game = parseConfFile(gameConfigPath) as GameConfig;
-      configCache.lastModified.game = fs.statSync(gameConfigPath).mtimeMs;
+    // 如果不是强制加载且文件没有修改，跳过加载
+    if (!force && 
+        configCache.lastModified.game === gameModified && 
+        configCache.lastModified.ranks === ranksModified &&
+        configCache.lastModified.achievements === achievementsModified) {
+      return;
     }
 
-    if (ranksModified) {
+    console.log('加载配置文件...');
+
+    // 加载游戏配置
+    if (force || configCache.lastModified.game !== gameModified) {
+      const gameRawConfig = parseConfFile(gameConfigPath);
+      configCache.game = {
+        BASE_POINTS: gameRawConfig.BASE_POINTS,
+        TOTAL_POINTS: gameRawConfig.TOTAL_POINTS,
+        INITIAL_POINTS: gameRawConfig.INITIAL_POINTS,
+        UMA_POINTS: gameRawConfig.UMA_POINTS,
+        DEFAULT_GAME_TYPE: gameRawConfig.DEFAULT_GAME_TYPE,
+        MIN_PLAYERS: gameRawConfig.MIN_PLAYERS,
+        MAX_PLAYERS: gameRawConfig.MAX_PLAYERS,
+        NEWBIE_PROTECTION_MAX_RANK: gameRawConfig.NEWBIE_PROTECTION_MAX_RANK
+      };
+      configCache.lastModified.game = gameModified;
+      console.log('游戏配置加载完成');
+    }
+
+    // 加载段位配置
+    if (force || configCache.lastModified.ranks !== ranksModified) {
       configCache.ranks = parseRanksConfig(ranksConfigPath);
-      configCache.lastModified.ranks = fs.statSync(ranksConfigPath).mtimeMs;
+      configCache.lastModified.ranks = ranksModified;
+      console.log('段位配置加载完成');
     }
+
+    // 加载成就配置
+    if (force || configCache.lastModified.achievements !== achievementsModified) {
+      if (achievementsStats) {
+        configCache.achievements = parseAchievementsConfig(achievementsConfigPath);
+        configCache.lastModified.achievements = achievementsModified;
+        console.log('成就配置加载完成');
+      } else {
+        // 如果成就配置文件不存在，使用默认配置
+        configCache.achievements = {
+          achievements: [],
+          winStreakExtraBonusPerGame: 5,
+          loseStreakExtraBonusPerGame: 3,
+          enabled: false
+        };
+        configCache.lastModified.achievements = 0;
+        console.log('成就配置文件不存在，使用默认配置');
+      }
+    }
+
   } catch (error) {
-    console.error('加载配置文件失败:', error);
+    console.error('加载配置失败:', error);
     throw error;
   }
 }
 
 // 保存配置到文件
-async function saveConfig(configType: 'game' | 'ranks', config: any): Promise<void> {
+async function saveConfig(configType: 'game' | 'ranks' | 'achievements', config: any): Promise<void> {
   let filePath: string;
   let content: string;
 
@@ -191,6 +290,9 @@ async function saveConfig(configType: 'game' | 'ranks', config: any): Promise<vo
   } else if (configType === 'ranks') {
     filePath = path.join(CONFIG_DIR, 'ranks.conf');
     content = generateRanksConfigContent(config);
+  } else if (configType === 'achievements') {
+    filePath = path.join(CONFIG_DIR, 'achievements.conf');
+    content = generateAchievementsConfigContent(config);
   } else {
     throw new Error(`不支持的配置类型: ${configType}`);
   }
@@ -257,6 +359,39 @@ function generateRanksConfigContent(ranks: RankConfig[]): string {
   return content;
 }
 
+// 生成成就配置文件内容
+function generateAchievementsConfigContent(config: AchievementConfig): string {
+  let content = `# 成就系统配置文件
+# 格式: ACHIEVEMENT_[类型]_[ID]=[名称],[条件类型],[条件值],[奖励积分],[描述]
+
+`;
+
+  // 按类别分组成就
+  const categories = {
+    single_game_glory: '单局高光表现奖励 (Single Game Glory)',
+    win_streak: '连胜奖励 (Win Streak)',
+    lose_streak: '连败补偿 (Lose Streak Compensation)'
+  };
+
+  for (const [category, title] of Object.entries(categories)) {
+    const categoryAchievements = config.achievements.filter(a => a.category === category);
+    if (categoryAchievements.length > 0) {
+      content += `# ${title}\n`;
+      for (const achievement of categoryAchievements) {
+        content += `${achievement.id}=${achievement.name},${achievement.conditionType},${achievement.conditionValue},${achievement.bonusPoints},${achievement.description}\n`;
+      }
+      content += '\n';
+    }
+  }
+
+  content += `# 成就系统配置
+WIN_STREAK_EXTRA_BONUS_PER_GAME=${config.winStreakExtraBonusPerGame}
+LOSE_STREAK_EXTRA_BONUS_PER_GAME=${config.loseStreakExtraBonusPerGame}
+ACHIEVEMENTS_ENABLED=${config.enabled}`;
+
+  return content;
+}
+
 // 配置管理器类
 export class ConfigManager {
   // 初始化配置管理器
@@ -281,16 +416,25 @@ export class ConfigManager {
     return configCache.ranks;
   }
 
+  // 获取成就配置
+  static getAchievementsConfig(): AchievementConfig {
+    if (!configCache.achievements) {
+      throw new Error('成就配置未加载');
+    }
+    return configCache.achievements;
+  }
+
   // 获取所有配置
   static getAllConfig() {
     return {
       game: this.getGameConfig(),
-      ranks: this.getRanksConfig()
+      ranks: this.getRanksConfig(),
+      achievements: this.getAchievementsConfig()
     };
   }
 
   // 更新配置
-  static async updateConfig(configType: 'game' | 'ranks', config: any): Promise<void> {
+  static async updateConfig(configType: 'game' | 'ranks' | 'achievements', config: any): Promise<void> {
     await saveConfig(configType, config);
     await this.reloadConfig();
     // 配置更新后，清空积分缓存
@@ -332,6 +476,7 @@ export class ConfigManager {
 // 导出便捷函数
 export const getGameConfig = () => ConfigManager.getGameConfig();
 export const getRanksConfig = () => ConfigManager.getRanksConfig();
+export const getAchievementsConfig = () => ConfigManager.getAchievementsConfig();
 export const getAllConfig = () => ConfigManager.getAllConfig();
 
 // 兼容性导出（用于替换原有的硬编码常量）

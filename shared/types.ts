@@ -107,6 +107,9 @@ export interface GamePlayerDetail extends GamePlayerRecord {
   pointsAfter?: number;
   rankBefore?: string;
   rankAfter?: string;
+  // 新增：成就相关
+  achievements?: AchievementEarned[]; // 本局获得的成就
+  achievementBonusPoints?: number;    // 成就奖励积分总和
 }
 
 // 积分历史记录 - 实时计算，不存储
@@ -121,6 +124,9 @@ export interface PointHistory {
   rankAfter: string;
   gameDate: string;
   opponents: string[];
+  // 新增：成就相关
+  achievements?: AchievementEarned[]; // 本局获得的成就
+  achievementBonusPoints?: number;    // 成就奖励积分总和
 }
 
 // 段位配置类型
@@ -167,6 +173,48 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
+// 成就系统相关类型定义
+
+// 成就条件类型
+export type AchievementConditionType = 
+  | 'final_score_gte'      // 最终得点 >=
+  | 'final_score_lte'      // 最终得点 <=
+  | 'position_eq'          // 名次 =
+  | 'position_and_score'   // 名次和得点组合
+  | 'win_streak'           // 连胜次数
+  | 'lose_streak';         // 连败次数
+
+// 成就定义
+export interface Achievement {
+  id: string;
+  name: string;
+  conditionType: AchievementConditionType;
+  conditionValue: string | number;
+  bonusPoints: number;
+  description: string;
+  category: 'single_game_glory' | 'win_streak' | 'lose_streak';
+}
+
+// 获得的成就
+export interface AchievementEarned {
+  achievementId: string;
+  achievementName: string;
+  bonusPoints: number;
+  description: string;
+  category: 'single_game_glory' | 'win_streak' | 'lose_streak';
+  // 对于连胜/连败成就，记录额外的连续次数奖励
+  extraBonusPoints?: number;
+  streakCount?: number;
+}
+
+// 成就配置
+export interface AchievementConfig {
+  achievements: Achievement[];
+  winStreakExtraBonusPerGame: number;
+  loseStreakExtraBonusPerGame: number;
+  enabled: boolean;
+}
+
 // 麻将积分计算结果
 export interface MahjongCalculation {
   finalScore: number;
@@ -176,6 +224,9 @@ export interface MahjongCalculation {
   originalRankPoints?: number; // 原始积分变化（未应用新手保护）
   isNewbieProtected?: boolean; // 是否应用了新手保护
   position: number;
+  // 新增：成就相关
+  achievements?: AchievementEarned[]; // 本局获得的成就
+  achievementBonusPoints?: number;    // 成就奖励积分总和
 }
 
 // 常量 - 已迁移到配置文件，这些导出用于向后兼容
@@ -183,6 +234,13 @@ export interface MahjongCalculation {
 // export const UMA_POINTS = [20, 10, 0, -10]; // 1-4位的马点 - 已迁移到 config/game.conf
 // export const BASE_POINTS = 25000; // 配点（精算原点） - 已迁移到 config/game.conf  
 // export const TOTAL_POINTS = 100000; // 四人总分 - 已迁移到 config/game.conf
+
+// 用户成就统计
+export interface UserAchievementStats {
+  totalAchievements: number;
+  achievementCounts: { [achievementName: string]: number };
+  totalBonusPoints: number;
+}
 
 // 兼容性类型定义（为了向后兼容，逐步迁移时使用）
 export interface Game extends GameRecord {}

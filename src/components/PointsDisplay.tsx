@@ -33,7 +33,7 @@ const PointsDisplay: React.FC<PointsDisplayProps> = ({
       <span className={`inline-flex items-center space-x-1 ${className}`}>
         {/* 显示删除线的原始积分 */}
         <span className="text-red-600 line-through text-sm opacity-75">
-          {showSign ? '' : ''}{originalPointsChange}
+          {originalPointsChange}
         </span>
         {/* 显示保护后的积分（0） */}
         <span className="text-red-600 font-medium">

@@ -5,7 +5,8 @@ import {
   UserStats, 
   GameRecord, 
   PointHistory, 
-  MahjongCalculation 
+  MahjongCalculation,
+  AchievementEarned
 } from '../../shared/types.js';
 import { 
   getInitialPoints, 
@@ -13,8 +14,10 @@ import {
   getUmaPoints,
   getBasePoints,
   getTotalPoints,
-  getRanksConfig
+  getRanksConfig,
+  getAchievementsConfig
 } from './configManager.js';
+import { detectAllAchievements, calculateAchievementBonusPoints } from './achievementEngine.js';
 
 // 缓存接口定义
 interface PointsCache {
@@ -46,7 +49,8 @@ function calculateConfigHash(): string {
     umaPoints: getUmaPoints(),
     basePoints: getBasePoints(),
     totalPoints: getTotalPoints(),
-    ranks: getRanksConfig()
+    ranks: getRanksConfig(),
+    achievements: getAchievementsConfig() // 添加成就配置到哈希计算中
   };
   
   return crypto.createHash('md5')
@@ -73,7 +77,7 @@ export function invalidateCache(): void {
   isCalculating = false;
   calculationPromise = null;
   
-  console.log('积分缓存已失效');
+  console.log('积分缓存已失效，下次访问将重新计算所有历史数据');
 }
 
 // 解析段位信息（内部函数）
@@ -117,11 +121,12 @@ function parseRankInfo(points: number) {
   };
 }
 
-// 计算单局积分（带新手保护）
+// 计算单局积分（带新手保护和成就检测）
 function calculateGamePointsWithProtection(
   scores: number[], 
   playerIds: string[], 
-  playerCurrentPoints: Map<string, number>
+  playerCurrentPoints: Map<string, number>,
+  allGames: GameRecord[] = [] // 添加所有游戏记录用于成就检测
 ): MahjongCalculation[] {
   // 验证总分
   const totalScore = scores.reduce((sum, score) => sum + score, 0);
@@ -162,6 +167,53 @@ function calculateGamePointsWithProtection(
       rankPoints = 0;
       isNewbieProtected = true;
     }
+
+    // 成就检测
+    let achievements: AchievementEarned[] = [];
+    let achievementBonusPoints = 0;
+
+    try {
+      // 获取成就配置
+      const achievementConfig = getAchievementsConfig();
+      
+      if (achievementConfig.enabled) {
+        // 获取玩家历史记录用于连胜/连败检测
+        const playerHistory = allGames
+          .filter(game => game.players.some(p => p.userId === player.playerId))
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          .map(game => {
+            const playerInGame = game.players.find(p => p.userId === player.playerId);
+            return {
+              gameId: game.id,
+              position: playerInGame?.position || 4,
+              finalScore: playerInGame?.finalScore || 0,
+              gameDate: game.createdAt
+            };
+          });
+
+        // 检测成就
+        achievements = detectAllAchievements(
+          player.score,
+          position + 1,
+          scores,
+          playerHistory
+        );
+
+        // 添加调试日志
+        console.log(`[成就检测] 玩家 ${player.playerId}, 得分: ${player.score}, 位置: ${position + 1}, 检测到成就数量: ${achievements.length}`);
+        if (achievements.length > 0) {
+          console.log(`[成就检测] 获得成就:`, achievements.map(a => a.achievementName));
+        }
+
+        // 计算成就奖励积分
+        achievementBonusPoints = calculateAchievementBonusPoints(achievements);
+        
+        // 将成就奖励加入到最终积分中
+        rankPoints += achievementBonusPoints;
+      }
+    } catch (error) {
+      console.warn(`成就检测失败，玩家 ${player.playerId}:`, error.message);
+    }
     
     results[player.index] = {
       finalScore: player.score,
@@ -170,7 +222,10 @@ function calculateGamePointsWithProtection(
       rankPoints,
       originalRankPoints,
       isNewbieProtected,
-      position: position + 1
+      position: position + 1,
+      // 新增：成就相关
+      achievements,
+      achievementBonusPoints
     };
   });
 
@@ -217,7 +272,7 @@ async function performCalculation(
   games: GameRecord[]
 ): Promise<{ userStats: Map<string, UserStats>, pointHistories: Map<string, PointHistory[]> }> {
   
-  console.log('重新计算所有用户积分（应用新手保护）');
+  console.log('重新计算所有用户积分（应用新手保护和成就系统）');
   
   // 初始化所有用户积分
   const userCurrentPoints = new Map<string, number>();
@@ -243,17 +298,22 @@ async function performCalculation(
     const batch = sortedGames.slice(i, i + batchSize);
     
     // 处理这批对局
-    batch.forEach(game => {
+    batch.forEach((game, gameIndex) => {
       try {
         // 获取参与这场对局的玩家ID
         const playerIds = game.players.map(p => p.userId);
         const scores = game.players.map(p => p.finalScore);
         
-        // 计算这局的积分变化（应用新手保护）
+        // 获取当前游戏之前的所有游戏（用于成就检测）
+        const currentGameIndex = i + gameIndex;
+        const previousGames = sortedGames.slice(0, currentGameIndex);
+        
+        // 计算这局的积分变化（应用新手保护和成就检测）
         const calculations = calculateGamePointsWithProtection(
           scores, 
           playerIds, 
-          userCurrentPoints
+          userCurrentPoints,
+          previousGames
         );
         
         // 应用积分变化到每个玩家
@@ -286,7 +346,10 @@ async function performCalculation(
             rankBefore: parseRankInfo(pointsBefore).displayName,
             rankAfter: parseRankInfo(pointsAfter).displayName,
             gameDate: game.createdAt,
-            opponents
+            opponents,
+            // 新增：成就相关
+            achievements: calc.achievements,
+            achievementBonusPoints: calc.achievementBonusPoints
           });
           
           pointHistories.set(player.userId, history);

@@ -74,6 +74,9 @@ router.get('/:type', authenticateToken, async (req: Request, res: Response) => {
       case 'ranks':
         config = ConfigManager.getRanksConfig();
         break;
+      case 'achievements':
+        config = ConfigManager.getAchievementsConfig();
+        break;
       default:
         return res.status(400).json({
           success: false,
@@ -101,7 +104,7 @@ router.put('/:type', authenticateToken, requireSuperAdmin, async (req: Request, 
     const config = req.body;
 
     // 验证配置类型
-    if (!['game', 'ranks'].includes(type)) {
+    if (!['game', 'ranks', 'achievements'].includes(type)) {
       return res.status(400).json({
         success: false,
         error: '不支持的配置类型'
@@ -135,8 +138,24 @@ router.put('/:type', authenticateToken, requireSuperAdmin, async (req: Request, 
       }
     }
 
+    if (type === 'achievements') {
+      if (!config.achievements || !Array.isArray(config.achievements)) {
+        return res.status(400).json({
+          success: false,
+          error: '成就配置必须包含成就数组'
+        } as ApiResponse);
+      }
+      
+      if (typeof config.enabled !== 'boolean') {
+        return res.status(400).json({
+          success: false,
+          error: '成就配置必须包含启用状态'
+        } as ApiResponse);
+      }
+    }
+
     // 更新配置
-    await ConfigManager.updateConfig(type as 'game' | 'ranks', config);
+    await ConfigManager.updateConfig(type as 'game' | 'ranks' | 'achievements', config);
 
     // 记录配置变更历史
     configChangeHistory.push({
@@ -148,7 +167,7 @@ router.put('/:type', authenticateToken, requireSuperAdmin, async (req: Request, 
 
     res.json({
       success: true,
-      message: `${type === 'game' ? '游戏' : '段位'}配置更新成功`
+      message: `${type === 'game' ? '游戏' : type === 'ranks' ? '段位' : '成就'}配置更新成功`
     } as ApiResponse);
 
   } catch (error) {

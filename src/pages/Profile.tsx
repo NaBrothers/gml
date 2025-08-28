@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, Calendar, Trophy, TrendingUp, ArrowLeft, Clock, Users, Target } from 'lucide-react';
+import { User, Calendar, Trophy, TrendingUp, ArrowLeft, Clock, Users, Target, Award } from 'lucide-react';
 import { userApi } from '../lib/api';
 import PointsChart from '../components/PointsChart';
 import PositionChart from '../components/PositionChart';
 import PointsDisplay from '../components/PointsDisplay';
 import Avatar from '../components/Avatar';
+import AchievementBadge, { AchievementBadgeList, AchievementStats } from '../components/AchievementBadge';
 import { useAuthStore } from '../stores/authStore';
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
 import HeaderBar from '../components/HeaderBar';
 import ScrollToTop from '../components/ScrollToTop';
+import { AchievementEarned, UserAchievementStats } from '../../shared/types';
 
 // 更新接口定义以适配新的数据结构
 interface UserHistory {
@@ -63,10 +65,12 @@ interface UserHistory {
       pointsBefore: number;
       pointsAfter: number;
       pointsChange: number;
+      originalPointsChange?: number; // 原始积分变化（未应用新手保护）
       rankBefore: string;
       rankAfter: string;
       gameDate: string;
       opponents: string[];
+      achievements?: AchievementEarned[]; // 本局获得的成就
     };
     opponents: string[];
   }>;
@@ -102,6 +106,28 @@ interface UserHistory {
     hasMore: boolean;
   };
 }
+
+// 计算用户成就统计
+const calculateUserAchievementStats = (histories: any[]): UserAchievementStats => {
+  const achievementCounts: { [achievementName: string]: number } = {};
+  let totalBonusPoints = 0;
+
+  histories.forEach(history => {
+    if (history.pointHistory?.achievements) {
+      history.pointHistory.achievements.forEach((achievement: AchievementEarned) => {
+        achievementCounts[achievement.achievementName] = 
+          (achievementCounts[achievement.achievementName] || 0) + 1;
+        totalBonusPoints += achievement.bonusPoints;
+      });
+    }
+  });
+
+  return {
+    totalAchievements: Object.values(achievementCounts).reduce((sum, count) => sum + count, 0),
+    achievementCounts,
+    totalBonusPoints
+  };
+};
 
 const Profile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -307,6 +333,58 @@ const Profile: React.FC = () => {
           </div>
         </div>
 
+        {/* 成就展示区域 */}
+        {(() => {
+          const achievementStats = calculateUserAchievementStats(histories);
+          return (
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 mb-8 border border-white/20 shadow-lg">
+              <div className="flex items-center space-x-2 mb-4">
+                <Award className="w-5 h-5 text-orange-500" />
+                <h3 className="text-xl font-bold text-gray-800">成就统计</h3>
+              </div>
+              
+              {achievementStats.totalAchievements > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 成就统计 */}
+                  <div>
+                    <AchievementStats
+                      achievementCounts={achievementStats.achievementCounts}
+                      totalBonusPoints={achievementStats.totalBonusPoints}
+                    />
+                  </div>
+                  
+                  {/* 最近获得的成就 */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-600 mb-3">最近获得的成就</h4>
+                    <div className="space-y-2">
+                      {histories
+                        .filter(h => h.pointHistory?.achievements?.length > 0)
+                        .slice(0, 3)
+                        .map((history, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                            <AchievementBadgeList
+                              achievements={history.pointHistory.achievements}
+                              size="sm"
+                              maxDisplay={2}
+                            />
+                            <span className="text-xs text-gray-500">
+                              {new Date(history.game.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-2">🏆</div>
+                  <p className="text-gray-500">暂无成就，继续努力吧！</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* 积分变化图表 */}
         <div className="mb-8">
           <PointsChart chartData={userHistory.chartData} />
@@ -335,46 +413,134 @@ const Profile: React.FC = () => {
                 }
                 
                 return (
-                  <div key={index} className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-                      <div className="flex items-center space-x-4 mb-3 sm:mb-0">
-                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${getPositionColor(history.gamePlayer.position || 0)}`}>
-                          {getPositionText(history.gamePlayer.position || 0)}
+                  <div
+                    key={history.game?.id || index}
+                    className="p-4 border border-gray-100 rounded-2xl hover:bg-gray-50/50 transition-colors"
+                  >
+                    {/* 移动端布局 */}
+                    <div className="block sm:hidden">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            history.gamePlayer.position === 1 ? 'bg-yellow-100 text-yellow-800' :
+                            history.gamePlayer.position === 2 ? 'bg-gray-100 text-gray-800' :
+                            history.gamePlayer.position === 3 ? 'bg-orange-100 text-orange-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {history.gamePlayer.position === 1 ? '一位' :
+                             history.gamePlayer.position === 2 ? '二位' :
+                             history.gamePlayer.position === 3 ? '三位' : '四位'}
+                          </span>
+                          <span className="text-sm font-medium text-gray-800">{history.game?.gameType}</span>
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-800">
-                            {history.gamePlayer.finalScore?.toLocaleString() || '0'}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            <PointsDisplay 
-                              pointsChange={history.gamePlayer.rankPointsChange || 0}
-                              originalPointsChange={history.gamePlayer.originalRankPointsChange}
-                              showSign={true}
-                            />{' '}积分
-                          </p>
-                          {/* 段位变化显示 */}
-                          {history.pointHistory && history.pointHistory.rankBefore !== history.pointHistory.rankAfter && (
-                            <p className="text-xs text-blue-600 font-medium mt-1">
-                              {history.pointHistory.rankBefore} → {history.pointHistory.rankAfter}
-                            </p>
-                          )}
+                        <div className="flex items-center space-x-1 text-gray-500">
+                          <Clock className="w-3 h-3" />
+                          <span className="text-xs">
+                            {history.game?.createdAt ? new Date(history.game.createdAt).toLocaleDateString() : '未知日期'}
+                          </span>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center justify-between sm:justify-end space-x-4">
-                        <div className="text-sm text-gray-600">
-                          <p className="flex items-center">
-                            <Clock className="w-4 h-4 mr-1" />
-                            {history.game?.createdAt ? formatDate(history.game.createdAt) : '未知时间'}
-                          </p>
-                          <p className="flex items-center mt-1">
-                            <Users className="w-4 h-4 mr-1" />
-                            {history.opponents?.join(', ') || '无对手信息'}
-                          </p>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">得分:</span>
+                          <span className="font-semibold">{history.gamePlayer.finalScore?.toLocaleString() || '0'}</span>
                         </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">积分变化:</span>
+                          <PointsDisplay 
+                            pointsChange={history.pointHistory?.originalPointsChange || history.gamePlayer.originalRankPointsChange || 0}
+                            originalPointsChange={history.gamePlayer.originalRankPointsChange}
+                            showSign={true}
+                          />
+                        </div>
+                        {history.pointHistory && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">段位:</span>
+                            <span className="text-sm">
+                              {history.pointHistory.rankBefore === history.pointHistory.rankAfter ? (
+                                <span className="text-gray-700">{history.pointHistory.rankBefore}</span>
+                              ) : (
+                                <span className="text-blue-600">
+                                  {history.pointHistory.rankBefore} → {history.pointHistory.rankAfter}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* 成就展示 */}
+                        {history.pointHistory?.achievements && history.pointHistory.achievements.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <AchievementBadgeList
+                              achievements={history.pointHistory.achievements}
+                              size="sm"
+                              maxDisplay={3}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
-                  
+
+                    {/* 桌面端布局 */}
+                    <div className="hidden sm:block">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-4">
+                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                            history.gamePlayer.position === 1 ? 'bg-yellow-100 text-yellow-800' :
+                            history.gamePlayer.position === 2 ? 'bg-gray-100 text-gray-800' :
+                            history.gamePlayer.position === 3 ? 'bg-orange-100 text-orange-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {history.gamePlayer.position === 1 ? '一位' :
+                             history.gamePlayer.position === 2 ? '二位' :
+                             history.gamePlayer.position === 3 ? '三位' : '四位'}
+                          </span>
+                          <span className="font-medium text-gray-800">{history.game?.gameType}</span>
+                          <span className="text-sm text-gray-500">
+                            得分: {history.gamePlayer.finalScore?.toLocaleString() || '0'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <PointsDisplay 
+                            pointsChange={history.pointHistory?.originalPointsChange || history.gamePlayer.originalRankPointsChange || 0}
+                            originalPointsChange={history.gamePlayer.originalRankPointsChange}
+                            showSign={true}
+                          />
+                          <div className="flex items-center space-x-1 text-gray-500">
+                            <Clock className="w-4 h-4" />
+                            <span className="text-sm">
+                              {history.game?.createdAt ? new Date(history.game.createdAt).toLocaleDateString() : '未知日期'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {history.pointHistory && (
+                        <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
+                          <span>
+                            段位: {history.pointHistory.rankBefore === history.pointHistory.rankAfter ? (
+                              <span className="text-gray-700">{history.pointHistory.rankBefore}</span>
+                            ) : (
+                              <span className="text-blue-600">
+                                {history.pointHistory.rankBefore} → {history.pointHistory.rankAfter}
+                              </span>
+                            )}
+                          </span>
+                          <span>对手: {history.opponents?.join(', ') || '未知'}</span>
+                        </div>
+                      )}
+
+                      {/* 成就展示 */}
+                      {history.pointHistory?.achievements && history.pointHistory.achievements.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <AchievementBadgeList
+                            achievements={history.pointHistory.achievements}
+                            size="sm"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               }).filter(Boolean)}

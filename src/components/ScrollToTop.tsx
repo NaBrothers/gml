@@ -63,7 +63,7 @@ const ScrollToTop: React.FC<ScrollToTopProps> = ({
     <button
       onClick={scrollToTop}
       className={`
-        fixed bottom-6 right-6 z-50
+        fixed bottom-6 right-6 z-[60]
         w-12 h-12 
         bg-white/60 backdrop-blur-sm
         hover:bg-white/80

@@ -25,6 +25,8 @@ import {
   invalidateCache
 } from './pointsCache.js';
 import { setPointsCacheInvalidator } from './configManager.js';
+import { detectAllAchievements, calculateAchievementBonusPoints } from './achievementEngine.js';
+import { getAchievementsConfig } from './configManager.js';
 
 // 内存缓存（提高性能）
 let users: User[] = [];
@@ -166,8 +168,8 @@ export function calculateMahjongPoints(scores: number[]): MahjongCalculation[] {
   return results;
 }
 
-// 计算麻将积分（带新手保护）
-export function calculateMahjongPointsWithProtection(scores: number[], playerIds: string[]): MahjongCalculation[] {
+// 计算麻将积分（带新手保护）- 专门用于单个游戏的成就计算
+export function calculateMahjongPointsWithProtectionForGame(scores: number[], playerIds: string[], previousGames: GameRecord[] = []): MahjongCalculation[] {
   // 验证总分
   const totalScore = scores.reduce((sum, score) => sum + score, 0);
   const expectedTotal = getTotalPoints();
@@ -213,6 +215,52 @@ export function calculateMahjongPointsWithProtection(scores: number[], playerIds
       }
     }
     
+    // 成就检测 - 只使用之前的游戏历史
+    let achievements: any[] = [];
+    let achievementBonusPoints = 0;
+
+    try {
+      // 获取成就配置
+      const achievementConfig = getAchievementsConfig();
+      
+      if (achievementConfig.enabled) {
+        // 获取玩家历史记录用于连胜/连败检测 - 只使用之前的游戏
+        const playerHistory = previousGames
+          .filter(game => game.players.some(p => p.userId === player.playerId))
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          .map(game => {
+            const playerInGame = game.players.find(p => p.userId === player.playerId);
+            return {
+              gameId: game.id,
+              position: playerInGame?.position || 4,
+              finalScore: playerInGame?.finalScore || 0,
+              gameDate: game.createdAt
+            };
+          });
+
+        // 检测成就
+        achievements = detectAllAchievements(
+          player.score,
+          position + 1,
+          scores,
+          playerHistory
+        );
+
+        // 计算成就奖励积分
+        achievementBonusPoints = calculateAchievementBonusPoints(achievements);
+        
+        // 将成就奖励加入到最终积分中
+        rankPoints += achievementBonusPoints;
+        
+        console.log(`[成就检测-单游戏] 玩家 ${player.playerId}, 得分: ${player.score}, 位置: ${position + 1}, 历史游戏数: ${playerHistory.length}, 检测到成就数量: ${achievements.length}`);
+        if (achievements.length > 0) {
+          console.log(`[成就检测-单游戏] 获得成就:`, achievements.map(a => a.achievementName));
+        }
+      }
+    } catch (error) {
+      console.warn(`成就检测失败，玩家 ${player.playerId}:`, error.message);
+    }
+    
     results[player.index] = {
       finalScore: player.score,
       rawPoints: parseFloat(rawPoints.toFixed(1)),
@@ -220,11 +268,20 @@ export function calculateMahjongPointsWithProtection(scores: number[], playerIds
       rankPoints,
       originalRankPoints,
       isNewbieProtected,
-      position: position + 1
+      position: position + 1,
+      // 添加成就信息
+      achievements,
+      achievementBonusPoints
     };
   });
 
   return results;
+}
+
+// 计算麻将积分（带新手保护）- 保留原有函数用于兼容性
+export function calculateMahjongPointsWithProtection(scores: number[], playerIds: string[]): MahjongCalculation[] {
+  // 对于新创建的游戏，使用所有现有游戏作为历史
+  return calculateMahjongPointsWithProtectionForGame(scores, playerIds, games);
 }
 
 // 计算用户当前积分（不包括正在进行的对局）
@@ -465,10 +522,18 @@ export const gamePlayerDb = {
     if (!game) return [];
 
     try {
-      // 使用带新手保护的计算方法
-      const calculations = calculateMahjongPointsWithProtection(
+      // 获取当前游戏在时间序列中的位置
+      const sortedGames = [...games].sort((a, b) => 
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+      const currentGameIndex = sortedGames.findIndex(g => g.id === gameId);
+      const previousGames = sortedGames.slice(0, currentGameIndex);
+
+      // 使用带新手保护的计算方法，但只传入之前的游戏用于成就检测
+      const calculations = calculateMahjongPointsWithProtectionForGame(
         game.players.map(p => p.finalScore),
-        game.players.map(p => p.userId)
+        game.players.map(p => p.userId),
+        previousGames
       );
 
       return game.players.map((player, index) => {
@@ -493,7 +558,10 @@ export const gamePlayerDb = {
           pointsBefore,
           pointsAfter,
           rankBefore,
-          rankAfter
+          rankAfter,
+          // 添加成就信息
+          achievements: calc.achievements || [],
+          achievementBonusPoints: calc.achievementBonusPoints || 0
         };
       });
     } catch (error) {
@@ -511,7 +579,9 @@ export const gamePlayerDb = {
           umaPoints: 0,
           rankPointsChange: 0,
           originalRankPointsChange: 0,
-          isNewbieProtected: false
+          isNewbieProtected: false,
+          achievements: [],
+          achievementBonusPoints: 0
         };
       });
     }

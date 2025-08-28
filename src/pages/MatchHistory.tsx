@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Trophy, Clock, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Calendar, Users, Trophy, Clock, ChevronLeft, ChevronRight, Trash2, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
@@ -10,6 +10,8 @@ import PointsDisplay from '../components/PointsDisplay';
 import ScrollToTop from '../components/ScrollToTop';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { useConfirm } from '../hooks/useConfirm';
+import { AchievementBadgeList } from '../components/AchievementBadge';
+import Avatar from '../components/Avatar';
 
 interface MatchHistoryState {
   games: GameDetail[];
@@ -259,73 +261,124 @@ const MatchHistory: React.FC = () => {
                       {/* 移动端布局 */}
                       <div className="md:hidden">
                         {/* 对局信息头部 */}
-                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
-                          <div className="flex items-center space-x-2">
-                            <Users className="w-4 h-4 text-indigo-600" />
-                            <span className="font-medium text-gray-800">{gameDetail.game.gameType}</span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="flex items-center space-x-1 text-gray-500">
-                              <Clock className="w-3 h-3" />
-                              <span className="text-xs">{formatDate(gameDetail.game.createdAt)}</span>
+                        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-3 mb-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <div className="p-1.5 bg-indigo-100 rounded-full">
+                                <Users className="w-4 h-4 text-indigo-600" />
+                              </div>
+                              <div>
+                                <div className="font-semibold text-gray-800">{gameDetail.game.gameType}</div>
+                                <div className="flex items-center space-x-1 text-gray-500 text-xs">
+                                  <Clock className="w-3 h-3" />
+                                  <span>{formatDate(gameDetail.game.createdAt)}</span>
+                                </div>
+                              </div>
                             </div>
                             {currentUser?.role === UserRole.SUPER_ADMIN && (
                               <button
                                 onClick={() => deleteGame(gameDetail.game.id, gameDetail.game.createdAt)}
-                                className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-full transition-colors"
                                 title="删除比赛记录"
                               >
-                                <Trash2 className="w-3 h-3" />
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             )}
                           </div>
                         </div>
 
-                        {/* 玩家结果 - 紧凑布局 */}
+                        {/* 玩家结果卡片 */}
                         <div className="space-y-2">
-                          {sortedPlayers.map((player) => (
+                          {sortedPlayers.map((player, index) => (
                             <div
                               key={player.id}
-                              className="flex items-center justify-between py-2 px-3 bg-gray-50/50 rounded-lg"
+                              className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
                             >
-                              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getPositionColor(player.position)}`}>
-                                  {getPositionText(player.position)}
-                                </span>
-                                {player.user ? (
-                                  <Link
-                                    to={`/profile/${player.userId}`}
-                                    className="text-sm font-medium text-indigo-600 hover:text-indigo-800 transition-colors truncate"
-                                  >
-                                    {player.user.nickname || player.user.username || '未知玩家'}
-                                  </Link>
-                                ) : (
-                                  <span className="text-sm font-medium text-gray-500 truncate">
-                                    已删除
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-right flex-shrink-0 ml-2">
-                                <div className="text-sm font-semibold text-gray-900">
-                                  {player.finalScore.toLocaleString()}
+                              <div className="p-4">
+                                {/* 玩家信息行 */}
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center space-x-3">
+                                    {/* 排名徽章 */}
+                    <div className={`relative w-10 h-10 rounded-full overflow-hidden ${
+                      index === 0 ? 'ring-2 ring-yellow-400 shadow-lg' :
+                      index === 1 ? 'ring-2 ring-gray-400 shadow-lg' :
+                      index === 2 ? 'ring-2 ring-orange-400 shadow-lg' :
+                      'ring-2 ring-red-400 shadow-lg'
+                    }`}>
+                      <Avatar
+                        src={player.user?.avatar}
+                        alt={player.user?.nickname || '未知玩家'}
+                        size="md"
+                        className="w-full h-full"
+                      />
+                      {index === 0 && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-300 rounded-full flex items-center justify-center">
+                          <Trophy className="w-2.5 h-2.5 text-yellow-700" />
+                        </div>
+                      )}
+                    </div>
+                                    
+                                    {/* 玩家名称 */}
+                                    <div className="flex-1 min-w-0">
+                                      {player.user ? (
+                                        <Link
+                                          to={`/profile/${player.userId}`}
+                                          className="block font-semibold text-gray-800 hover:text-indigo-600 transition-colors truncate"
+                                        >
+                                          {player.user.nickname || player.user.username || '未知玩家'}
+                                        </Link>
+                                      ) : (
+                                        <span className="block font-semibold text-gray-500 truncate">
+                                          已删除
+                                        </span>
+                                      )}
+                                      
+                                      {/* 段位信息 */}
+                                      {player.rankBefore && player.rankAfter && (
+                                        <div className="text-xs mt-1">
+                                          {player.rankBefore === player.rankAfter ? (
+                                            <span className="text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                                              {player.rankBefore}
+                                            </span>
+                                          ) : (
+                                            <div className="flex items-center space-x-1">
+                                              <span className="text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                                                {player.rankBefore}
+                                              </span>
+                                              <span className="text-gray-400">→</span>
+                                              <span className="text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
+                                                {player.rankAfter}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* 分数信息 */}
+                                  <div className="text-right">
+                                    <div className="text-lg font-bold text-gray-900 mb-1">
+                                      {player.finalScore.toLocaleString()}
+                                    </div>
+                                    <div className="text-sm">
+                                      <PointsDisplay 
+                                        pointsChange={player.rankPointsChange}
+                                        originalPointsChange={player.originalRankPointsChange}
+                                        showSign={true}
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="text-xs font-medium">
-                                  <PointsDisplay 
-                                    pointsChange={player.rankPointsChange}
-                                    originalPointsChange={player.originalRankPointsChange}
-                                    showSign={true}
-                                  />
-                                </div>
-                                {/* 段位信息 */}
-                                {player.rankBefore && player.rankAfter && (
-                                  <div className="text-xs font-medium mt-1">
-                                    {player.rankBefore === player.rankAfter ? (
-                                      <span className="text-gray-600">{player.rankBefore}</span>
-                                    ) : (
-                                      <span className="text-blue-600">
-                                        {player.rankBefore} → {player.rankAfter}
-                                      </span>
-                                    )}
+
+                                {/* 成就展示 */}
+                                {player.achievements && player.achievements.length > 0 && (
+                                  <div className="mt-3 pt-3 border-t border-gray-200/50">
+                                    <AchievementBadgeList
+                                      achievements={player.achievements}
+                                      size="sm"
+                                      maxDisplay={3}
+                                    />
                                   </div>
                                 )}
                               </div>
@@ -418,6 +471,17 @@ const MatchHistory: React.FC = () => {
                                         </span>
                                       )}
                                     </span>
+                                  </div>
+                                )}
+
+                                {/* 成就展示 */}
+                                {player.achievements && player.achievements.length > 0 && (
+                                  <div className="mt-3 pt-2 border-t border-gray-200">
+                                    <AchievementBadgeList
+                                      achievements={player.achievements}
+                                      size="sm"
+                                      maxDisplay={3}
+                                    />
                                   </div>
                                 )}
                               </div>
