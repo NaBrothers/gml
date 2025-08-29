@@ -4,12 +4,16 @@ import { useUserStore } from '../stores/userStore';
 import { rankingApi } from '../lib/api';
 import { Trophy, Medal, Crown, TrendingUp, Users, BarChart3, ArrowLeft } from 'lucide-react';
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
+import Avatar from '../components/Avatar';
+import HeaderBar from '../components/HeaderBar';
+import ScrollToTop from '../components/ScrollToTop';
 
 // 段位配置数据（与后端保持一致）
 
 
 interface Stats {
   rankStats: { [key: string]: number };
+  detailedRankStats: { [key: string]: number };
   totalUsers: number;
   totalGames: number;
   averagePoints: number;
@@ -34,14 +38,15 @@ const Ranking: React.FC = () => {
       if (response.success && response.data) {
         // 使用API返回的数据结构
         const adaptedStats: Stats = {
-          rankStats: response.data.rankStats || {},
+          rankStats: (response.data as any).majorRankStats || {}, // 段位分布使用大段位统计
+          detailedRankStats: (response.data as any).detailedRankStats || {}, // 最高段位使用详细段位统计
           totalUsers: response.data.totalUsers,
           totalGames: response.data.totalGames,
           averagePoints: response.data.averagePoints
         };
         setStats(adaptedStats);
-        // 从rankStats中提取段位信息
-        setMajorRanks(Object.keys(response.data.rankStats || {}));
+        // 从majorRankStats中提取大段位信息
+        setMajorRanks(Object.keys((response.data as any).majorRankStats || {}));
       }
     } catch (error) {
       console.error('获取统计数据失败:', error);
@@ -83,87 +88,52 @@ const Ranking: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50">
-      {/* 导航栏 */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-pink-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* 移动端布局 */}
-            <div className="flex items-center justify-between w-full md:hidden">
-              <button
-                onClick={() => navigate('/')}
-                className="text-gray-600 hover:text-gray-800 transition-colors p-2"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <h1 className="text-xl font-bold text-gray-800 flex items-center absolute left-1/2 transform -translate-x-1/2">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
-                积分排行榜
-              </h1>
-              <div className="w-9"></div>
-            </div>
-            
-            {/* 桌面端布局 */}
-            <div className="hidden md:flex items-center justify-between w-full">
-              <button
-                onClick={() => navigate('/')}
-                className="text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                ← 返回首页
-              </button>
-              <h1 className="text-xl font-bold text-gray-800 flex items-center">
-                <Trophy className="w-5 h-5 mr-2 text-yellow-500" />
-                积分排行榜
-              </h1>
-              <div></div>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <HeaderBar title="积分排行榜" />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* 统计卡片 */}
           {stats && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-8">
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 md:p-6 border border-white/20 shadow-lg">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/20 shadow-lg">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs md:text-sm font-medium text-gray-600">总用户数</p>
-                    <p className="text-lg md:text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs md:text-sm font-medium text-gray-600 truncate">总用户数</p>
+                    <p className="text-base md:text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
                   </div>
-                  <Users className="w-6 h-6 md:w-8 md:h-8 text-blue-500" />
+                  <Users className="w-5 h-5 md:w-8 md:h-8 text-blue-500 flex-shrink-0 ml-2" />
                 </div>
               </div>
               
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 md:p-6 border border-white/20 shadow-lg">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/20 shadow-lg">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs md:text-sm font-medium text-gray-600">总对局数</p>
-                    <p className="text-lg md:text-2xl font-bold text-gray-900">{stats.totalGames}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs md:text-sm font-medium text-gray-600 truncate">总对局数</p>
+                    <p className="text-base md:text-2xl font-bold text-gray-900">{stats.totalGames}</p>
                   </div>
-                  <BarChart3 className="w-6 h-6 md:w-8 md:h-8 text-green-500" />
+                  <BarChart3 className="w-5 h-5 md:w-8 md:h-8 text-green-500 flex-shrink-0 ml-2" />
                 </div>
               </div>
               
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 md:p-6 border border-white/20 shadow-lg">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/20 shadow-lg">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs md:text-sm font-medium text-gray-600">平均积分</p>
-                    <p className="text-lg md:text-2xl font-bold text-gray-900">{stats.averagePoints}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs md:text-sm font-medium text-gray-600 truncate">平均积分</p>
+                    <p className="text-base md:text-2xl font-bold text-gray-900">{stats.averagePoints}</p>
                   </div>
-                  <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-purple-500" />
+                  <TrendingUp className="w-5 h-5 md:w-8 md:h-8 text-purple-500 flex-shrink-0 ml-2" />
                 </div>
               </div>
               
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 md:p-6 border border-white/20 shadow-lg">
+              <div className="bg-white/60 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/20 shadow-lg">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs md:text-sm font-medium text-gray-600">最高段位</p>
-                    <p className="text-sm md:text-lg font-bold text-gray-900">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs md:text-sm font-medium text-gray-600 truncate">最高段位</p>
+                    <p className="text-xs md:text-lg font-bold text-gray-900 truncate">
                       {(() => {
                         // 按段位等级排序，找到最高段位
                         const rankOrder = ['雀之气', '雀者', '雀师', '大雀师', '雀灵', '雀王', '雀皇', '雀宗', '雀尊', '雀圣', '雀帝'];
-                        const ranks = Object.keys(stats.rankStats);
+                        const ranks = Object.keys(stats.detailedRankStats); // 使用详细段位统计
                         if (ranks.length === 0) return '暂无';
                         
                         // 按段位等级和小段位排序
@@ -196,12 +166,13 @@ const Ranking: React.FC = () => {
                           return getMinorRank(b) - getMinorRank(a); // 降序
                         });
                         
+                        // 返回完整的段位名称，包括小段位
                         return sortedRanks[0];
                       })()
                       }
                     </p>
                   </div>
-                  <Crown className="w-6 h-6 md:w-8 md:h-8 text-yellow-500" />
+                  <Crown className="w-5 h-5 md:w-8 md:h-8 text-yellow-500 flex-shrink-0 ml-2" />
                 </div>
               </div>
             </div>
@@ -360,38 +331,83 @@ const Ranking: React.FC = () => {
                     {filteredRankings.map((user, index) => {
                       const actualRank = selectedMajorRank === 'all' ? user.rank : index + 1;
                       return (
-                        <div key={user.id} className="p-6 hover:bg-white/50 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              {/* 排名图标 */}
-                              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${getRankBadgeColor(actualRank)}`}>
-                                {actualRank <= 3 ? (
-                                  getRankIcon(actualRank)
-                                ) : (
-                                  <span className="text-white font-bold">{actualRank}</span>
-                                )}
+                        <div key={user.id} className="p-4 md:p-6 hover:bg-white/50 transition-colors">
+                          {/* 移动端布局 */}
+                          <div className="flex items-center justify-between md:hidden">
+                            <div className="flex items-center space-x-4 flex-1 min-w-0">
+                              {/* 用户头像 - 放大并添加排名边框 */}
+                              <div className="relative flex-shrink-0">
+                                <Avatar 
+                                  src={user.avatar}
+                                  alt={user.nickname}
+                                  size="lg"
+                                  className={actualRank <= 3 ? (
+                                    actualRank === 1 ? 'border-4 border-yellow-400 shadow-lg shadow-yellow-200' :
+                                    actualRank === 2 ? 'border-4 border-gray-400 shadow-lg shadow-gray-200' :
+                                    'border-4 border-amber-600 shadow-lg shadow-amber-200'
+                                  ) : ''}
+                                  onClick={() => navigate(`/profile/${user.id}`)}
+                                />
+                              </div>
+                              
+                              {/* 用户信息 - 可伸缩 */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <span className="text-lg font-bold text-gray-600 mr-1">#{actualRank}</span>
+                                  <button
+                                    onClick={() => navigate(`/profile/${user.id}`)}
+                                    className="font-semibold text-gray-800 hover:text-pink-600 transition-colors cursor-pointer underline-offset-4 hover:underline text-sm truncate"
+                                  >
+                                    {user.nickname || user.username}
+                                  </button>
+                                </div>
+                                <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                  <span className="truncate">{getRankNameByLevel(user.rankLevel)}</span>
+                                  <span>•</span>
+                                  <span className="whitespace-nowrap">{user.gamesPlayed} 局对局</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* 积分信息 - 固定宽度 */}
+                            <div className="text-right flex-shrink-0 ml-3">
+                              <div className="text-lg font-bold text-gray-800">
+                                {user.totalPoints.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-500">积分</div>
+                            </div>
+                          </div>
+
+                          {/* 桌面端布局 */}
+                          <div className="hidden md:flex items-center justify-between">
+                            <div className="flex items-center space-x-6">
+                              {/* 用户头像 - 放大并添加排名边框 */}
+                              <div className="relative">
+                                <Avatar 
+                                  src={user.avatar}
+                                  alt={user.nickname}
+                                  size="xl"
+                                  className={actualRank <= 3 ? (
+                                    actualRank === 1 ? 'border-4 border-yellow-400 shadow-lg shadow-yellow-200' :
+                                    actualRank === 2 ? 'border-4 border-gray-400 shadow-lg shadow-gray-200' :
+                                    'border-4 border-amber-600 shadow-lg shadow-amber-200'
+                                  ) : ''}
+                                  onClick={() => navigate(`/profile/${user.id}`)}
+                                />
                               </div>
                               
                               {/* 用户信息 */}
                               <div>
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-3">
+                                  <span className="text-2xl font-bold text-gray-600">#{actualRank}</span>
                                   <button
                                     onClick={() => navigate(`/profile/${user.id}`)}
-                                    className="font-semibold text-gray-800 hover:text-pink-600 transition-colors cursor-pointer underline-offset-4 hover:underline"
+                                    className="font-semibold text-gray-800 hover:text-pink-600 transition-colors cursor-pointer underline-offset-4 hover:underline text-lg"
                                   >
-                                    {user.nickname}
+                                    {user.nickname || user.username}
                                   </button>
-                                  {actualRank <= 3 && (
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                      actualRank === 1 ? 'bg-yellow-100 text-yellow-800' :
-                                      actualRank === 2 ? 'bg-gray-100 text-gray-800' :
-                                      'bg-amber-100 text-amber-800'
-                                    }`}>
-                                      {actualRank === 1 ? '冠军' : actualRank === 2 ? '亚军' : '季军'}
-                                    </span>
-                                  )}
                                 </div>
-                                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
                                   <span>{getRankNameByLevel(user.rankLevel)}</span>
                                   <span>•</span>
                                   <span>{user.gamesPlayed} 局对局</span>
@@ -417,6 +433,8 @@ const Ranking: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      <ScrollToTop />
     </div>
   );
 };

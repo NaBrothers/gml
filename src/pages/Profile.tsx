@@ -1,45 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, Calendar, Trophy, TrendingUp, ArrowLeft, Clock, Users, Target } from 'lucide-react';
+import { User, Calendar, Trophy, TrendingUp, ArrowLeft, Clock, Users, Target, Award } from 'lucide-react';
 import { userApi } from '../lib/api';
 import PointsChart from '../components/PointsChart';
 import PositionChart from '../components/PositionChart';
-
-// 段位配置数据（与后端保持一致）
+import PointsDisplay from '../components/PointsDisplay';
+import Avatar from '../components/Avatar';
+import AchievementBadge, { AchievementBadgeList, AchievementStats } from '../components/AchievementBadge';
+import { useAuthStore } from '../stores/authStore';
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
+import HeaderBar from '../components/HeaderBar';
+import ScrollToTop from '../components/ScrollToTop';
+import { AchievementEarned, UserAchievementStats } from '../../shared/types';
 
-
-
+// 更新接口定义以适配新的数据结构
 interface UserHistory {
   user: {
     id: string;
     username: string;
     nickname: string;
     avatar: string;
-    totalPoints: number;
-    rankLevel: string;
-    gamesPlayed: number;
+    role: string;
+    createdAt: string;
+    updatedAt: string;
+    stats: {
+      totalPoints: number;
+      rankLevel: number;
+      rankPoints: number;
+      gamesPlayed: number;
+      wins: number;
+      averagePosition: number;
+      currentRank: string;
+    };
   };
   histories: Array<{
     game: {
       id: string;
       gameType: string;
       createdAt: string;
-      status: string;
     };
     gamePlayer: {
       id: string;
-      gameId: string;
       userId: string;
       finalScore: number;
       rawPoints: number;
       umaPoints: number;
       rankPointsChange: number;
+      originalRankPointsChange?: number; // 原始积分变化（未应用新手保护）
       position: number;
     };
     allPlayers: Array<{
       id: string;
-      gameId: string;
       userId: string;
       finalScore: number;
       position: number;
@@ -49,16 +60,17 @@ interface UserHistory {
         username: string;
       };
     }>;
-    pointHistory: {
-      id: string;
-      userId: string;
+    pointHistory?: {
       gameId: string;
       pointsBefore: number;
       pointsAfter: number;
       pointsChange: number;
+      originalPointsChange?: number; // 原始积分变化（未应用新手保护）
       rankBefore: string;
       rankAfter: string;
-      createdAt: string;
+      gameDate: string;
+      opponents: string[];
+      achievements?: AchievementEarned[]; // 本局获得的成就
     };
     opponents: string[];
   }>;
@@ -67,8 +79,9 @@ interface UserHistory {
     wins: number;
     averagePosition: string;
     totalPointsChange: number;
+    originalTotalPointsChange?: number; // 原始积分变化（未应用新手保护）
     currentPoints: number;
-    currentRank: string;
+    currentRank: number;
   };
   chartData: {
     pointsHistory: Array<{
@@ -93,6 +106,28 @@ interface UserHistory {
     hasMore: boolean;
   };
 }
+
+// 计算用户成就统计
+const calculateUserAchievementStats = (histories: any[]): UserAchievementStats => {
+  const achievementCounts: { [achievementName: string]: number } = {};
+  let totalBonusPoints = 0;
+
+  histories.forEach(history => {
+    if (history.pointHistory?.achievements) {
+      history.pointHistory.achievements.forEach((achievement: AchievementEarned) => {
+        achievementCounts[achievement.achievementName] = 
+          (achievementCounts[achievement.achievementName] || 0) + 1;
+        totalBonusPoints += achievement.bonusPoints;
+      });
+    }
+  });
+
+  return {
+    totalAchievements: Object.values(achievementCounts).reduce((sum, count) => sum + count, 0),
+    achievementCounts,
+    totalBonusPoints
+  };
+};
 
 const Profile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -174,12 +209,6 @@ const Profile: React.FC = () => {
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">加载失败</h2>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => navigate('/ranking')}
-            className="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors"
-          >
-            返回排行榜
-          </button>
         </div>
       </div>
     );
@@ -189,276 +218,338 @@ const Profile: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50">
-      {/* 导航栏 */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-pink-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* 移动端布局 */}
-            <div className="flex items-center justify-between w-full md:hidden">
-              <button
-                onClick={() => navigate('/ranking')}
-                className="text-gray-600 hover:text-gray-800 transition-colors p-2"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <h1 className="text-xl font-bold text-gray-800 flex items-center absolute left-1/2 transform -translate-x-1/2">
-                <User className="w-5 h-5 mr-2 text-pink-500" />
-                个人历史
-              </h1>
-              <div className="w-9"></div>
+      <HeaderBar title="用户详情" />
+
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        {/* 用户信息卡片 */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 mb-8 border border-white/20 shadow-lg">
+          {/* 移动端布局 */}
+          <div className="block sm:hidden">
+            <div className="flex items-center space-x-4 mb-6">
+              <Avatar
+                src={user.avatar}
+                alt={user.nickname}
+                size="lg"
+                className="w-16 h-16"
+              />
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-3">{user.nickname}</h2>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="flex flex-col items-center">
+                    <Trophy className="w-4 h-4 mb-1 text-yellow-500" />
+                    <span className="text-gray-600">{getRankNameByLevel(user.stats.rankLevel)}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Target className="w-4 h-4 mb-1 text-blue-500" />
+                    <span className="text-gray-600">{user.stats.totalPoints?.toLocaleString() || '0'}</span>
+                    <span className="text-xs text-gray-500">积分</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Users className="w-4 h-4 mb-1 text-green-500" />
+                    <span className="text-gray-600">{user.stats.gamesPlayed || 0}</span>
+                    <span className="text-xs text-gray-500">局对局</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            {/* 桌面端布局 */}
-            <div className="hidden md:flex items-center justify-between w-full">
-              <button
-                onClick={() => navigate('/ranking')}
-                className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 mr-2" />
-                返回排行榜
-              </button>
-              <h1 className="text-xl font-bold text-gray-800 flex items-center">
-                <User className="w-5 h-5 mr-2 text-pink-500" />
-                个人历史
-              </h1>
-              <div></div>
+          </div>
+          
+          {/* 桌面端布局 */}
+          <div className="hidden sm:flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <Avatar
+                src={user.avatar}
+                alt={user.nickname}
+                size="xl"
+                className="w-20 h-20"
+              />
+              <div>
+                <h2 className="text-3xl font-bold text-gray-800 mb-2">{user.nickname}</h2>
+                <div className="flex items-center space-x-4 text-gray-600">
+                  <span className="flex items-center">
+                    <Trophy className="w-4 h-4 mr-1" />
+                    {getRankNameByLevel(user.stats.rankLevel)}
+                  </span>
+                  <span className="flex items-center">
+                    <Target className="w-4 h-4 mr-1" />
+                    {user.stats.totalPoints?.toLocaleString() || '0'} 积分
+                  </span>
+                  <span className="flex items-center">
+                    <Users className="w-4 h-4 mr-1" />
+                    {user.stats.gamesPlayed || 0} 局对局
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </nav>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* 用户信息卡片 */}
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 sm:p-8 border border-white/20 shadow-lg mb-8">
-            {/* 移动端布局 */}
-            <div className="block sm:hidden">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-blue-400 rounded-full flex items-center justify-center text-white text-xl font-bold">
-                  {user.nickname.charAt(0)}
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-3">{user.nickname}</h2>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div className="flex flex-col items-center">
-                      <Trophy className="w-4 h-4 mb-1 text-yellow-500" />
-                      <span className="text-gray-600">{getRankNameByLevel(Number(user.rankLevel))}</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <Target className="w-4 h-4 mb-1 text-blue-500" />
-                      <span className="text-gray-600">{user.totalPoints.toLocaleString()}</span>
-                      <span className="text-xs text-gray-500">积分</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <Users className="w-4 h-4 mb-1 text-green-500" />
-                      <span className="text-gray-600">{user.gamesPlayed}</span>
-                      <span className="text-xs text-gray-500">局对局</span>
-                    </div>
+        {/* 统计数据卡片 */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-white/20 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">总对局</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalGames}</p>
+              </div>
+              <Calendar className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
+            </div>
+          </div>
+          
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-white/20 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">胜利次数</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.wins}</p>
+              </div>
+              <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
+            </div>
+          </div>
+          
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-white/20 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">平均排名</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.averagePosition}</p>
+              </div>
+              <Target className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
+            </div>
+          </div>
+          
+          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-white/20 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs sm:text-sm font-medium text-gray-600">积分变化</p>
+                <p className="text-lg sm:text-2xl font-bold">
+                  <PointsDisplay 
+                    pointsChange={stats.totalPointsChange}
+                    originalPointsChange={stats.originalTotalPointsChange}
+                    showSign={true}
+                  />
+                </p>
+              </div>
+              <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* 成就展示区域 */}
+        {(() => {
+          const achievementStats = calculateUserAchievementStats(histories);
+          return (
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 mb-8 border border-white/20 shadow-lg">
+              <div className="flex items-center space-x-2 mb-4">
+                <Award className="w-5 h-5 text-orange-500" />
+                <h3 className="text-xl font-bold text-gray-800">成就统计</h3>
+              </div>
+              
+              {achievementStats.totalAchievements > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 成就统计 */}
+                  <div>
+                    <AchievementStats
+                      achievementCounts={achievementStats.achievementCounts}
+                      totalBonusPoints={achievementStats.totalBonusPoints}
+                    />
                   </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* 桌面端布局 */}
-            <div className="hidden sm:flex items-center justify-between">
-              <div className="flex items-center space-x-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-pink-400 to-blue-400 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                  {user.nickname.charAt(0)}
-                </div>
-                <div>
-                  <h2 className="text-3xl font-bold text-gray-800 mb-2">{user.nickname}</h2>
-                  <div className="flex items-center space-x-4 text-gray-600">
-                    <span className="flex items-center">
-                      <Trophy className="w-4 h-4 mr-1" />
-                      {getRankNameByLevel(Number(user.rankLevel))}
-                    </span>
-                    <span className="flex items-center">
-                      <Target className="w-4 h-4 mr-1" />
-                      {user.totalPoints.toLocaleString()} 积分
-                    </span>
-                    <span className="flex items-center">
-                      <Users className="w-4 h-4 mr-1" />
-                      {user.gamesPlayed} 局对局
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 统计数据 */}
-          <div className="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-4 gap-3 sm:gap-6 mb-8">
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-white/20 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">总对局数</p>
-                  <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalGames}</p>
-                </div>
-                <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
-              </div>
-            </div>
-            
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-white/20 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">胜利次数</p>
-                  <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.wins}</p>
-                </div>
-                <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-500" />
-              </div>
-            </div>
-            
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-white/20 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">平均排名</p>
-                  <p className="text-lg sm:text-2xl font-bold text-gray-900">{stats.averagePosition}</p>
-                </div>
-                <Target className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
-              </div>
-            </div>
-            
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-3 sm:p-6 border border-white/20 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">积分变化</p>
-                  <p className={`text-lg sm:text-2xl font-bold ${
-                    stats.totalPointsChange >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {stats.totalPointsChange >= 0 ? '+' : ''}{stats.totalPointsChange}
-                  </p>
-                </div>
-                <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500" />
-              </div>
-            </div>
-          </div>
-
-          {/* 积分变化图表 */}
-          <div className="mb-8">
-            <PointsChart chartData={userHistory.chartData} />
-          </div>
-
-          {/* 名次分布图表 */}
-          <div className="mb-8">
-            <PositionChart gameResults={userHistory.chartData.gameResults} />
-          </div>
-
-          {/* 历史比赛记录 */}
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-xl font-semibold text-gray-800 flex items-center">
-                <Calendar className="w-5 h-5 mr-2" />
-                历史比赛记录
-                <span className="text-sm font-normal text-gray-500 ml-2">({histories.length} 局)</span>
-              </h3>
-            </div>
-
-            {histories.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                暂无比赛记录
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-200">
-                {histories.map((history, index) => (
-                  <div key={history.game.id} className="p-4 sm:p-6 hover:bg-white/50 transition-colors">
-                    {/* 移动端布局 */}
-                    <div className="block sm:hidden">
-                      <div className="flex items-start space-x-3 mb-3">
-                        {/* 排名标识 - 移动端较小 */}
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ${
-                          getPositionColor(history.gamePlayer.position)
-                        }`}>
-                          {getPositionText(history.gamePlayer.position)}
-                        </div>
-                        
-                        {/* 对局信息 */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="font-medium text-gray-800 text-sm">{history.game.gameType}</span>
-                          </div>
-                          <div className="text-xs text-gray-600 flex items-center mb-1">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {formatDate(history.game.createdAt)}
-                          </div>
-                          <div className="text-xs text-gray-600 truncate">
-                            对手: {history.opponents.join(', ')}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* 分数和积分变化 - 移动端单独一行 */}
-                      <div className="flex items-center justify-between bg-gray-50/50 rounded-lg p-3">
-                        <div>
-                          <div className="text-base font-bold text-gray-800">
-                            {history.gamePlayer.finalScore.toLocaleString()}
-                          </div>
-                          <div className="text-xs text-gray-500">最终分数</div>
-                        </div>
-                        <div className="text-right">
-                          <div className={`text-sm font-medium ${
-                            history.pointHistory.pointsChange >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {history.pointHistory.pointsChange >= 0 ? '+' : ''}{history.pointHistory.pointsChange} 积分
-                          </div>
-                          {history.pointHistory.rankBefore !== history.pointHistory.rankAfter && (
-                            <div className="text-xs text-blue-600 mt-1">
-                              {history.pointHistory.rankBefore} → {history.pointHistory.rankAfter}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 桌面端布局 */}
-                    <div className="hidden sm:flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        {/* 排名标识 */}
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm ${
-                          getPositionColor(history.gamePlayer.position)
-                        }`}>
-                          {getPositionText(history.gamePlayer.position)}
-                        </div>
-                        
-                        {/* 对局信息 */}
-                        <div>
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="font-medium text-gray-800">{history.game.gameType}</span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-sm text-gray-600 flex items-center">
-                              <Clock className="w-4 h-4 mr-1" />
-                              {formatDate(history.game.createdAt)}
+                  
+                  {/* 最近获得的成就 */}
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-600 mb-3">最近获得的成就</h4>
+                    <div className="space-y-2">
+                      {histories
+                        .filter(h => h.pointHistory?.achievements?.length > 0)
+                        .slice(0, 3)
+                        .map((history, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                            <AchievementBadgeList
+                              achievements={history.pointHistory.achievements}
+                              size="sm"
+                              maxDisplay={2}
+                            />
+                            <span className="text-xs text-gray-500">
+                              {new Date(history.game.createdAt).toLocaleDateString()}
                             </span>
                           </div>
-                          <div className="text-sm text-gray-600">
-                            对手: {history.opponents.join(', ')}
-                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 text-4xl mb-2">🏆</div>
+                  <p className="text-gray-500">暂无成就，继续努力吧！</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* 积分变化图表 */}
+        <div className="mb-8">
+          <PointsChart chartData={userHistory.chartData} />
+        </div>
+
+        {/* 名次分布图表 */}
+        <div className="mb-8">
+          <PositionChart gameResults={userHistory.chartData.gameResults} />
+        </div>
+
+        {/* 对局历史 */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 border border-white/20 shadow-lg">
+          <h3 className="text-xl font-bold text-gray-800 mb-6">对局历史</h3>
+          
+          {histories.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-400 text-6xl mb-4">🎯</div>
+              <p className="text-gray-500">暂无对局记录</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {histories.map((history, index) => {
+                // 添加空值检查
+                if (!history || !history.gamePlayer) {
+                  return null;
+                }
+                
+                return (
+                  <div
+                    key={history.game?.id || index}
+                    className="p-4 border border-gray-100 rounded-2xl hover:bg-gray-50/50 transition-colors"
+                  >
+                    {/* 移动端布局 */}
+                    <div className="block sm:hidden">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            history.gamePlayer.position === 1 ? 'bg-yellow-100 text-yellow-800' :
+                            history.gamePlayer.position === 2 ? 'bg-gray-100 text-gray-800' :
+                            history.gamePlayer.position === 3 ? 'bg-orange-100 text-orange-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {history.gamePlayer.position === 1 ? '一位' :
+                             history.gamePlayer.position === 2 ? '二位' :
+                             history.gamePlayer.position === 3 ? '三位' : '四位'}
+                          </span>
+                          <span className="text-sm font-medium text-gray-800">{history.game?.gameType}</span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-gray-500">
+                          <Clock className="w-3 h-3" />
+                          <span className="text-xs">
+                            {history.game?.createdAt ? new Date(history.game.createdAt).toLocaleDateString() : '未知日期'}
+                          </span>
                         </div>
                       </div>
-                      
-                      {/* 分数和积分变化 */}
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-gray-800">
-                          {history.gamePlayer.finalScore.toLocaleString()}
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">得分:</span>
+                          <span className="font-semibold">{history.gamePlayer.finalScore?.toLocaleString() || '0'}</span>
                         </div>
-                        <div className={`text-sm font-medium ${
-                          history.pointHistory.pointsChange >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {history.pointHistory.pointsChange >= 0 ? '+' : ''}{history.pointHistory.pointsChange} 积分
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">积分变化:</span>
+                          <PointsDisplay 
+                            pointsChange={history.pointHistory?.originalPointsChange || history.gamePlayer.originalRankPointsChange || 0}
+                            originalPointsChange={history.gamePlayer.originalRankPointsChange}
+                            showSign={true}
+                          />
                         </div>
-                        {history.pointHistory.rankBefore !== history.pointHistory.rankAfter && (
-                          <div className="text-xs text-blue-600 mt-1">
-                            {history.pointHistory.rankBefore} → {history.pointHistory.rankAfter}
+                        {history.pointHistory && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">段位:</span>
+                            <span className="text-sm">
+                              {history.pointHistory.rankBefore === history.pointHistory.rankAfter ? (
+                                <span className="text-gray-700">{history.pointHistory.rankBefore}</span>
+                              ) : (
+                                <span className="text-blue-600">
+                                  {history.pointHistory.rankBefore} → {history.pointHistory.rankAfter}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* 成就展示 */}
+                        {history.pointHistory?.achievements && history.pointHistory.achievements.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <AchievementBadgeList
+                              achievements={history.pointHistory.achievements}
+                              size="sm"
+                              maxDisplay={3}
+                            />
                           </div>
                         )}
                       </div>
                     </div>
+
+                    {/* 桌面端布局 */}
+                    <div className="hidden sm:block">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-4">
+                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                            history.gamePlayer.position === 1 ? 'bg-yellow-100 text-yellow-800' :
+                            history.gamePlayer.position === 2 ? 'bg-gray-100 text-gray-800' :
+                            history.gamePlayer.position === 3 ? 'bg-orange-100 text-orange-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {history.gamePlayer.position === 1 ? '一位' :
+                             history.gamePlayer.position === 2 ? '二位' :
+                             history.gamePlayer.position === 3 ? '三位' : '四位'}
+                          </span>
+                          <span className="font-medium text-gray-800">{history.game?.gameType}</span>
+                          <span className="text-sm text-gray-500">
+                            得分: {history.gamePlayer.finalScore?.toLocaleString() || '0'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <PointsDisplay 
+                            pointsChange={history.pointHistory?.originalPointsChange || history.gamePlayer.originalRankPointsChange || 0}
+                            originalPointsChange={history.gamePlayer.originalRankPointsChange}
+                            showSign={true}
+                          />
+                          <div className="flex items-center space-x-1 text-gray-500">
+                            <Clock className="w-4 h-4" />
+                            <span className="text-sm">
+                              {history.game?.createdAt ? new Date(history.game.createdAt).toLocaleDateString() : '未知日期'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {history.pointHistory && (
+                        <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
+                          <span>
+                            段位: {history.pointHistory.rankBefore === history.pointHistory.rankAfter ? (
+                              <span className="text-gray-700">{history.pointHistory.rankBefore}</span>
+                            ) : (
+                              <span className="text-blue-600">
+                                {history.pointHistory.rankBefore} → {history.pointHistory.rankAfter}
+                              </span>
+                            )}
+                          </span>
+                          <span>对手: {history.opponents?.join(', ') || '未知'}</span>
+                        </div>
+                      )}
+
+                      {/* 成就展示 */}
+                      {history.pointHistory?.achievements && history.pointHistory.achievements.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <AchievementBadgeList
+                            achievements={history.pointHistory.achievements}
+                            size="sm"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                );
+              }).filter(Boolean)}
+            </div>
+          )}
         </div>
       </div>
+      
+      <ScrollToTop />
     </div>
   );
 };

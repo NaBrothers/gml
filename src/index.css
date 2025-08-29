@@ -29,31 +29,83 @@
 
 * {
   font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  box-sizing: border-box;
+}
+
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 自定义鼠标指针 - 仅在桌面端生效 */
+@media (min-width: 1024px) {
+  * {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' font-size='20'%3E🀄%3C/text%3E%3C/svg%3E") 16 16, auto !important;
+  }
+  
+  /* 为可点击元素提供不同的鼠标样式 */
+  a, button, input[type="submit"], input[type="button"], .cursor-pointer {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' font-size='22'%3E🀄%3C/text%3E%3C/svg%3E") 16 16, pointer !important;
+  }
+  
+  /* 为文本输入框提供文本光标样式 */
+  input[type="text"], input[type="password"], input[type="email"], textarea {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle' font-size='18'%3E🀄%3C/text%3E%3C/svg%3E") 16 16, text !important;
+  }
 }
 
 body {
   background: linear-gradient(135deg, #FFB7C5 0%, #87CEEB 50%, #B19CD9 100%);
   min-height: 100vh;
   overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  position: relative;
+  /* 防止移动端页面被拉伸 */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  /* 禁用移动端的触摸高亮 */
+  -webkit-tap-highlight-color: transparent;
+  /* 禁用移动端的选择，但保留表单元素的交互 */
+  -webkit-touch-callout: none;
 }
 
-/* 自定义滚动条 */
+/* 禁用大部分元素的选择，但保留表单元素 */
+*:not(input):not(textarea):not(select) {
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* 完全隐藏滚动条 - 不占用任何空间 */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 0px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, var(--sakura-pink), var(--sky-blue));
-  border-radius: 4px;
+  background: transparent;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, var(--sakura-dark), var(--sky-dark));
+/* 兼容其他浏览器 */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* 确保滚动功能正常 */
+html, body {
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* 玻璃态效果 */
@@ -210,6 +262,95 @@ body {
   .title-responsive {
     font-size: clamp(2rem, 8vw, 4rem);
   }
+  
+  /* 移动端动画优化 */
+  .breathing-light,
+  .breathing-light-slow,
+  .breathing-light-fast,
+  .starlight,
+  .gradient-breathing {
+    animation-duration: 6s; /* 统一放慢动画速度 */
+    filter: blur(4px); /* 减少模糊效果 */
+  }
+  
+  .sakura-fall {
+    animation-duration: 15s; /* 樱花雨在移动端更慢 */
+  }
+  
+  /* 减少移动端的动画复杂度 */
+  .sakura-petal {
+    filter: none; /* 移除阴影效果 */
+  }
+  
+  /* 移动端布局优化 */
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    position: fixed;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  #root {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* 防止移动端双击缩放 */
+  * {
+    touch-action: manipulation;
+  }
+  
+  /* 移动端输入框优化 */
+  input[type="text"], input[type="password"], input[type="email"], textarea, select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border-radius: 0;
+    font-size: 16px; /* 防止iOS缩放 */
+  }
+  
+  /* 保持单选框和复选框的原生外观 */
+  input[type="radio"], input[type="checkbox"] {
+    -webkit-appearance: auto;
+    -moz-appearance: auto;
+    appearance: auto;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+  }
+}
+
+/* 低性能设备优化 */
+@media (max-width: 480px) {
+  .breathing-light,
+  .breathing-light-slow,
+  .breathing-light-fast {
+    animation: none; /* 在小屏设备上禁用复杂动画 */
+    opacity: 0.3;
+  }
+  
+  .starlight {
+    animation: simple-pulse 4s ease-in-out infinite;
+  }
+  
+  .gradient-breathing {
+    animation: none;
+    background: radial-gradient(circle, rgba(255, 183, 197, 0.2) 0%, transparent 70%);
+  }
+}
+
+@keyframes simple-pulse {
+  0%, 100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 /* 加载动画 */
@@ -264,6 +405,144 @@ body {
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+/* 樱花雨动画 */
+.sakura-fall {
+  animation-name: sakura-fall, sakura-sway, sakura-rotate;
+  animation-timing-function: linear, ease-in-out, linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes sakura-fall {
+  0% {
+    transform: translateY(-10vh);
+  }
+  100% {
+    transform: translateY(110vh);
+  }
+}
+
+@keyframes sakura-sway {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(20px);
+  }
+  75% {
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes sakura-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.sakura-petal {
+  filter: drop-shadow(0 2px 4px rgba(255, 183, 197, 0.3));
+  transition: all 0.3s ease;
+}
+
+/* 优化的呼吸光点动画 */
+.breathing-light {
+  animation: breathing-glow 4s ease-in-out infinite;
+}
+
+@keyframes breathing-glow {
+  0%, 100% {
+    transform: scale(0.8);
+    opacity: 0.4;
+    filter: blur(8px);
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+    filter: blur(12px);
+  }
+}
+
+.breathing-light-slow {
+  animation: breathing-glow-slow 6s ease-in-out infinite;
+}
+
+@keyframes breathing-glow-slow {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.3;
+    filter: blur(10px) hue-rotate(0deg);
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+    filter: blur(15px) hue-rotate(30deg);
+  }
+}
+
+.breathing-light-fast {
+  animation: breathing-glow-fast 2.5s ease-in-out infinite;
+}
+
+@keyframes breathing-glow-fast {
+  0%, 100% {
+    transform: scale(0.7);
+    opacity: 0.5;
+    filter: blur(6px);
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+    filter: blur(10px);
+  }
+}
+
+/* 星光闪烁效果 */
+.starlight {
+  animation: starlight-twinkle 3s ease-in-out infinite;
+}
+
+@keyframes starlight-twinkle {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.5) rotate(0deg);
+  }
+  25% {
+    opacity: 0.8;
+    transform: scale(1) rotate(90deg);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7) rotate(180deg);
+  }
+  75% {
+    opacity: 0.9;
+    transform: scale(1.2) rotate(270deg);
+  }
+}
+
+/* 渐变色呼吸光晕 */
+.gradient-breathing {
+  animation: gradient-breathing 5s ease-in-out infinite;
+}
+
+@keyframes gradient-breathing {
+  0%, 100% {
+    background: radial-gradient(circle, rgba(255, 183, 197, 0.4) 0%, transparent 70%);
+    transform: scale(0.8);
+  }
+  33% {
+    background: radial-gradient(circle, rgba(135, 206, 235, 0.5) 0%, transparent 70%);
+    transform: scale(1.1);
+  }
+  66% {
+    background: radial-gradient(circle, rgba(177, 156, 217, 0.4) 0%, transparent 70%);
+    transform: scale(1.3);
   }
 }
 

@@ -1,20 +1,22 @@
 // 用户数据管理
 import { create } from 'zustand';
-import { User, RankingUser } from '../../shared/types';
+import { UserWithStats, RankingUser } from '../../shared/types';
 import { usersApi, rankingApi } from '../lib/api';
+import { useAuthStore } from './authStore';
 
 interface UserState {
-  users: User[];
+  users: UserWithStats[];
   rankings: RankingUser[];
-  currentUser: User | null;
+  currentUser: UserWithStats | null;
   isLoading: boolean;
   error: string | null;
   
   // Actions
   fetchUsers: () => Promise<void>;
   fetchRankings: (limit?: number, majorRank?: string) => Promise<void>;
-  fetchUserById: (id: string) => Promise<User | null>;
+  fetchUserById: (id: string) => Promise<UserWithStats | null>;
   updateUser: (id: string, data: { nickname?: string, avatar?: string }) => Promise<boolean>;
+  updateProfile: (nickname?: string, avatar?: File) => Promise<boolean>;
   deleteUser: (id: string) => Promise<boolean>;
   clearError: () => void;
 }
@@ -119,18 +121,19 @@ export const useUserStore = create<UserState>((set, get) => ({
       const response = await usersApi.update(id, data);
       
       if (response.success && response.data) {
-        // 更新本地用户列表
-        const { users } = get();
+        // 更新用户列表中的用户信息
+        const users = get().users;
         const updatedUsers = users.map(user => 
           user.id === id ? response.data! : user
         );
         
         set({
           users: updatedUsers,
-          currentUser: response.data,
+          currentUser: get().currentUser?.id === id ? response.data : get().currentUser,
           isLoading: false,
           error: null
         });
+        
         return true;
       } else {
         set({
@@ -155,20 +158,62 @@ export const useUserStore = create<UserState>((set, get) => ({
       const response = await usersApi.delete(id);
       
       if (response.success) {
-        // 从本地用户列表中移除
-        const { users } = get();
+        // 从用户列表中移除已删除的用户
+        const users = get().users;
         const updatedUsers = users.filter(user => user.id !== id);
         
         set({
           users: updatedUsers,
+          currentUser: get().currentUser?.id === id ? null : get().currentUser,
           isLoading: false,
           error: null
         });
+        
         return true;
       } else {
         set({
           isLoading: false,
           error: response.error || '删除用户失败'
+        });
+        return false;
+      }
+    } catch (error) {
+      set({
+        isLoading: false,
+        error: '网络错误，请稍后重试'
+      });
+      return false;
+    }
+  },
+
+  updateProfile: async (nickname?: string, avatar?: File) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const formData = new FormData();
+      if (nickname) {
+        formData.append('nickname', nickname);
+      }
+      if (avatar) {
+        formData.append('avatar', avatar);
+      }
+      
+      const response = await usersApi.updateProfile(formData);
+      
+      if (response.success && response.data) {
+        // 更新认证状态中的用户信息
+        useAuthStore.getState().updateUserInfo(response.data);
+        
+        set({
+          isLoading: false,
+          error: null
+        });
+        
+        return true;
+      } else {
+        set({
+          isLoading: false,
+          error: response.error || '更新个人资料失败'
         });
         return false;
       }

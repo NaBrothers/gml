@@ -1,5 +1,5 @@
 // API服务层
-import { User, UserRegistration, UserLogin, AuthResponse, ApiResponse, GameResult, GameDetail, RankingUser, PointHistory } from '../../shared/types';
+import { UserWithStats, UserRegistration, UserLogin, AuthResponse, ApiResponse, GameResult, GameDetail, RankingUser, PointHistory } from '../../shared/types';
 
 const API_BASE_URL = '/api';
 
@@ -81,6 +81,34 @@ class ApiClient {
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
+
+  // 文件上传请求
+  async uploadFile<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
+    const url = `${this.baseURL}${endpoint}`;
+    const headers: HeadersInit = {};
+
+    // 添加认证头
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    try {
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers,
+        body: formData,
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('文件上传失败:', error);
+      return {
+        success: false,
+        error: '文件上传失败'
+      };
+    }
+  }
 }
 
 // 创建API客户端实例
@@ -90,24 +118,36 @@ const apiClient = new ApiClient(API_BASE_URL);
 export const authApi = {
   // 用户注册
   register: (userData: UserRegistration): Promise<AuthResponse> => {
-    return apiClient.post<AuthResponse>('/auth/register', userData);
+    return apiClient.post('/auth/register', userData);
   },
 
   // 用户登录
   login: async (credentials: UserLogin): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
-    console.log('Login API response:', response);
-    
-    // 检查响应结构并设置token
-    if (response.success && response.data && response.data.token) {
+    if (response.success && response.data?.token) {
       apiClient.setToken(response.data.token);
     }
-    
-    // 返回正确的响应格式
-    return response.data || response;
+    // 确保返回正确的AuthResponse格式
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: {
+          token: response.data.token!,
+          user: response.data.user!
+        },
+        token: response.data.token,
+        user: response.data.user,
+        message: response.message
+      };
+    } else {
+      return {
+        success: false,
+        error: response.error || response.message || '登录失败'
+      };
+    }
   },
 
-  // 登出
+  // 用户登出
   logout: () => {
     apiClient.clearToken();
   },
@@ -122,33 +162,26 @@ export const authApi = {
     apiClient.clearToken();
   },
 
-  // 验证token并获取用户信息
+  // 验证token
   verify: (): Promise<AuthResponse> => {
-    console.log('🌐 API: 开始调用verify接口');
-    const result = apiClient.get<AuthResponse>('/auth/verify');
-    result.then(response => {
-      console.log('📥 API: verify接口响应:', response);
-    }).catch(error => {
-      console.error('💥 API: verify接口错误:', error);
-    });
-    return result;
+    return apiClient.get('/auth/verify');
   }
 };
 
-// 用户管理API
+// 用户相关API
 export const usersApi = {
   // 获取所有用户
-  getAll: (): Promise<ApiResponse<{ users: User[], total: number }>> => {
+  getAll: (): Promise<ApiResponse<{ users: UserWithStats[], total: number }>> => {
     return apiClient.get('/users');
   },
 
   // 根据ID获取用户
-  getById: (id: string): Promise<ApiResponse<User>> => {
+  getById: (id: string): Promise<ApiResponse<UserWithStats>> => {
     return apiClient.get(`/users/${id}`);
   },
 
   // 更新用户信息
-  update: (id: string, data: { nickname?: string, avatar?: string }): Promise<ApiResponse<User>> => {
+  update: (id: string, data: { nickname?: string, avatar?: string }): Promise<ApiResponse<UserWithStats>> => {
     return apiClient.put(`/users/${id}`, data);
   },
 
@@ -164,15 +197,20 @@ export const usersApi = {
     if (params?.offset) query.append('offset', params.offset.toString());
     const queryString = query.toString();
     return apiClient.get(`/users/${id}/history${queryString ? '?' + queryString : ''}`);
+  },
+
+  // 更新用户资料（支持文件上传）
+  updateProfile: (formData: FormData): Promise<ApiResponse<UserWithStats>> => {
+    return apiClient.uploadFile('/users/profile', formData);
   }
 };
 
-// 用户API别名（为了兼容Profile组件）
+// 用户API别名
 export const userApi = usersApi;
 
 // 对局相关API
 export const gamesApi = {
-  // 创建对局记录
+  // 创建对局
   create: (gameData: GameResult): Promise<ApiResponse<{
     game: any;
     players: any[];
@@ -209,7 +247,7 @@ export const rankingApi = {
 
   // 获取用户积分历史
   getUserHistory: (userId: string, limit?: number): Promise<ApiResponse<{
-    user: User;
+    user: UserWithStats;
     history: PointHistory[];
   }>> => {
     const query = limit ? `?limit=${limit}` : '';
@@ -231,6 +269,44 @@ export const rankingApi = {
 export const healthApi = {
   check: (): Promise<ApiResponse<{ message: string }>> => {
     return apiClient.get('/health');
+  }
+};
+
+// 配置相关API
+export const configApi = {
+  // 获取所有配置
+  getAll: (): Promise<ApiResponse<{
+    game: {
+      BASE_POINTS: number;
+      TOTAL_POINTS: number;
+      INITIAL_POINTS: number;
+      UMA_POINTS: number[];
+      DEFAULT_GAME_TYPE: string;
+      MIN_PLAYERS: number;
+      MAX_PLAYERS: number;
+    };
+    scoring: any;
+    ranks: any[];
+  }>> => {
+    return apiClient.get('/config');
+  },
+
+  // 获取游戏配置
+  getGameConfig: (): Promise<ApiResponse<{
+    BASE_POINTS: number;
+    TOTAL_POINTS: number;
+    INITIAL_POINTS: number;
+    UMA_POINTS: number[];
+    DEFAULT_GAME_TYPE: string;
+    MIN_PLAYERS: number;
+    MAX_PLAYERS: number;
+  }>> => {
+    return apiClient.get('/config/game');
+  },
+
+  // 获取公开段位配置（无需认证）
+  getPublicRanks: (): Promise<ApiResponse<any[]>> => {
+    return fetch('/api/config/public/ranks').then(res => res.json());
   }
 };
 

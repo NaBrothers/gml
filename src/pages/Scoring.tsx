@@ -7,6 +7,8 @@ import { User } from '../../shared/types';
 import { Calculator, Users, Trophy, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { rankConfigs, getRankNameByLevel } from '../utils/rankConfigs';
+import HeaderBar from '../components/HeaderBar';
+import { configApi } from '../lib/api';
 
 // 段位配置数据（与后端保持一致）
 
@@ -19,6 +21,9 @@ const Scoring: React.FC = () => {
   
   const [gameType, setGameType] = useState('半庄');
   const [showResult, setShowResult] = useState(false);
+  const [scoreDifference, setScoreDifference] = useState(0);
+  const [isValidTotal, setIsValidTotal] = useState(false);
+  const [totalPoints, setTotalPoints] = useState(100000); // 动态总分
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -26,6 +31,20 @@ const Scoring: React.FC = () => {
       return;
     }
     fetchUsers();
+    
+    // 获取游戏配置
+    const loadGameConfig = async () => {
+      try {
+        const response = await configApi.getGameConfig();
+        if (response.success && response.data) {
+          setTotalPoints(response.data.TOTAL_POINTS);
+        }
+      } catch (error) {
+        console.error('获取游戏配置失败:', error);
+      }
+    };
+    
+    loadGameConfig();
   }, [isAuthenticated, navigate, fetchUsers]);
 
   const handlePlayerSelect = (user: User) => {
@@ -50,6 +69,27 @@ const Scoring: React.FC = () => {
     }
     
     setScores(newScores);
+    
+    // 实时更新验证状态
+    updateValidationState(newScores);
+  };
+
+  // 更新验证状态
+  const updateValidationState = async (currentScores: (number | string)[]) => {
+    const numericScores = currentScores.map(score => {
+      if (typeof score === 'string') {
+        if (score === '' || score === '-') return 0;
+        const num = parseInt(score);
+        return isNaN(num) ? 0 : num;
+      }
+      return score;
+    });
+    
+    const valid = await validateScores(numericScores);
+    const diff = await getScoreDifference(numericScores);
+    
+    setIsValidTotal(valid);
+    setScoreDifference(diff);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,8 +100,18 @@ const Scoring: React.FC = () => {
       return;
     }
     
-    if (!validateScores(numericScores)) {
-      alert('四人总分必须为100000点');
+    const numericScores = scores.map(score => {
+      if (typeof score === 'string') {
+        if (score === '' || score === '-') return 0;
+        const num = parseInt(score);
+        return isNaN(num) ? 0 : num;
+      }
+      return score;
+    });
+    
+    const valid = await validateScores(numericScores);
+    if (!valid) {
+      alert(`四人总分必须为${totalPoints}点`);
       return;
     }
 
@@ -76,7 +126,7 @@ const Scoring: React.FC = () => {
       setShowResult(true);
       setTimeout(() => {
         setShowResult(false);
-        navigate('/');
+        navigate('/match-history');
       }, 3000);
     }
   };
@@ -84,6 +134,8 @@ const Scoring: React.FC = () => {
   const handleReset = () => {
     resetGameForm();
     setGameType('半庄');
+    setScoreDifference(0);
+    setIsValidTotal(false);
   };
 
   // 转换scores为数字进行计算，处理字符串状态
@@ -95,9 +147,11 @@ const Scoring: React.FC = () => {
     }
     return score;
   });
-  
-  const scoreDifference = getScoreDifference(numericScores);
-  const isValidTotal = validateScores(numericScores);
+
+  // 初始化时更新验证状态
+  useEffect(() => {
+    updateValidationState(scores);
+  }, [totalPoints]); // 当totalPoints变化时重新验证
 
   if (showResult) {
     return (
@@ -116,36 +170,7 @@ const Scoring: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-blue-50 to-purple-50">
-      {/* 导航栏 */}
-      <nav className="bg-white/80 backdrop-blur-sm border-b border-pink-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            {/* 移动端布局 */}
-            <div className="flex items-center justify-between w-full md:hidden">
-              <button
-                onClick={() => navigate('/')}
-                className="text-gray-600 hover:text-gray-800 transition-colors p-2"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <h1 className="text-xl font-bold text-gray-800 absolute left-1/2 transform -translate-x-1/2">对局记分</h1>
-              <div className="w-9"></div>
-            </div>
-            
-            {/* 桌面端布局 */}
-            <div className="hidden md:flex items-center justify-between w-full">
-              <button
-                onClick={() => navigate('/')}
-                className="text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                ← 返回首页
-              </button>
-              <h1 className="text-xl font-bold text-gray-800">对局记分</h1>
-              <div></div>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <HeaderBar title="对局记分" />
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -291,7 +316,7 @@ const Scoring: React.FC = () => {
                   {!isValidTotal && (
                     <div className="mt-2 text-sm text-red-600 flex items-center">
                       <AlertCircle className="w-4 h-4 mr-1" />
-                      四人总分必须为100000点
+                      四人总分必须为{totalPoints}点
                     </div>
                   )}
                 </div>

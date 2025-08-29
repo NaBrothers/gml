@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.js';
 import usersRoutes from './routes/users.js';
 import gamesRoutes from './routes/games.js';
 import rankingRoutes from './routes/ranking.js';
+import configRoutes from './routes/config.js';
 
 // for esm mode
 const __filename = fileURLToPath(import.meta.url);
@@ -26,6 +27,9 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// 静态文件服务 - 提供上传的头像图片
+app.use('/api/uploads', express.static(path.join(__dirname, '../uploads')));
+
 /**
  * API Routes
  */
@@ -33,6 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/games', gamesRoutes);
 app.use('/api/ranking', rankingRoutes);
+app.use('/api/config', configRoutes);
 
 /**
  * health

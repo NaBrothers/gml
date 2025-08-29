@@ -1,7 +1,44 @@
 // 对局记分管理
 import { create } from 'zustand';
 import { GameDetail, GameResult, User } from '../../shared/types';
-import { gamesApi } from '../lib/api';
+import { gamesApi, configApi } from '../lib/api';
+
+// 缓存的游戏配置
+let cachedGameConfig: any = null;
+let lastConfigFetchTime = 0;
+const CONFIG_CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+
+// 获取游戏配置（带缓存）
+const getGameConfig = async () => {
+  const now = Date.now();
+  
+  // 如果缓存有效，直接返回缓存
+  if (cachedGameConfig && (now - lastConfigFetchTime) < CONFIG_CACHE_DURATION) {
+    return cachedGameConfig;
+  }
+  
+  try {
+    const response = await configApi.getGameConfig();
+    if (response.success && response.data) {
+      cachedGameConfig = response.data;
+      lastConfigFetchTime = now;
+      return response.data;
+    }
+  } catch (error) {
+    console.error('获取游戏配置失败:', error);
+  }
+  
+  // 如果获取失败，返回默认配置
+  return {
+    BASE_POINTS: 25000,
+    TOTAL_POINTS: 100000,
+    INITIAL_POINTS: 1800,
+    UMA_POINTS: [15, 5, -5, -15],
+    DEFAULT_GAME_TYPE: '半庄',
+    MIN_PLAYERS: 4,
+    MAX_PLAYERS: 4
+  };
+};
 
 interface GameState {
   games: GameDetail[];
@@ -140,13 +177,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 }));
 
 // 验证分数总和的工具函数
-export const validateScores = (scores: number[]): boolean => {
+export const validateScores = async (scores: number[]): Promise<boolean> => {
+  const config = await getGameConfig();
   const total = scores.reduce((sum, score) => sum + score, 0);
-  return total === 100000;
+  return total === config.TOTAL_POINTS;
 };
 
 // 计算分数差值的工具函数
-export const getScoreDifference = (scores: number[]): number => {
+export const getScoreDifference = async (scores: number[]): Promise<number> => {
+  const config = await getGameConfig();
   const total = scores.reduce((sum, score) => sum + score, 0);
-  return 100000 - total;
+  return config.TOTAL_POINTS - total;
 };
