@@ -197,23 +197,6 @@ export function calculateMahjongPointsWithProtectionForGame(scores: number[], pl
     const rawPoints = (player.score - basePoints) / 1000;
     const umaPointsValue = umaPoints[position];
     const originalRankPoints = Math.ceil(rawPoints + umaPointsValue);
-    let rankPoints = originalRankPoints;
-    let isNewbieProtected = false;
-    
-    // 新手保护逻辑：检查玩家当前段位
-    const user = users.find(u => u.id === player.playerId);
-    if (user) {
-      // 计算玩家当前积分（不包括本局）
-      const currentPoints = calculateUserCurrentPoints(player.playerId);
-      const rankInfo = parseRankInfo(currentPoints);
-      const newbieProtectionMaxRank = getNewbieProtectionMaxRank();
-      
-      // 如果玩家在新手保护范围内且积分为负，则设为0
-      if (rankInfo.rankConfig.rankOrder <= newbieProtectionMaxRank && originalRankPoints < 0) {
-        rankPoints = 0;
-        isNewbieProtected = true;
-      }
-    }
     
     // 成就检测 - 只使用之前的游戏历史
     let achievements: any[] = [];
@@ -249,9 +232,6 @@ export function calculateMahjongPointsWithProtectionForGame(scores: number[], pl
         // 计算成就奖励积分
         achievementBonusPoints = calculateAchievementBonusPoints(achievements);
         
-        // 将成就奖励加入到最终积分中
-        rankPoints += achievementBonusPoints;
-        
         console.log(`[成就检测-单游戏] 玩家 ${player.playerId}, 得分: ${player.score}, 位置: ${position + 1}, 历史游戏数: ${playerHistory.length}, 检测到成就数量: ${achievements.length}`);
         if (achievements.length > 0) {
           console.log(`[成就检测-单游戏] 获得成就:`, achievements.map(a => a.achievementName));
@@ -259,6 +239,25 @@ export function calculateMahjongPointsWithProtectionForGame(scores: number[], pl
       }
     } catch (error) {
       console.warn(`成就检测失败，玩家 ${player.playerId}:`, error.message);
+    }
+    
+    // 先加上成就奖励积分
+    let rankPoints = originalRankPoints + achievementBonusPoints;
+    let isNewbieProtected = false;
+    
+    // 新手保护逻辑：检查玩家当前段位
+    const user = users.find(u => u.id === player.playerId);
+    if (user) {
+      // 计算玩家当前积分（不包括本局）
+      const currentPoints = calculateUserCurrentPoints(player.playerId);
+      const rankInfo = parseRankInfo(currentPoints);
+      const newbieProtectionMaxRank = getNewbieProtectionMaxRank();
+      
+      // 如果玩家在新手保护范围内且加上成就奖励后的积分仍为负，则设为0
+      if (rankInfo.rankConfig.rankOrder <= newbieProtectionMaxRank && rankPoints < 0) {
+        rankPoints = 0;
+        isNewbieProtected = true;
+      }
     }
     
     results[player.index] = {
@@ -482,37 +481,46 @@ export const gameDb = {
   }
 };
 
-// 计算用户在特定时间点之前的积分
+// 计算用户在特定时间点之前的积分（使用与缓存系统一致的逻辑）
 function calculateUserPointsBeforeGame(userId: string, gameDate: string): number {
+  // 获取该用户在指定时间之前的所有游戏
   const userGames = games.filter(game => 
     game.players.some(player => player.userId === userId) &&
     new Date(game.createdAt).getTime() < new Date(gameDate).getTime()
   );
 
-  let totalPointsChange = 0;
-  userGames.forEach(game => {
-    const userPlayer = game.players.find(player => player.userId === userId);
-    if (userPlayer) {
-      try {
-        // 使用原始计算方法（不带保护）来计算历史积分
-        const calculation = calculateMahjongPoints(
-          game.players.map(p => p.finalScore)
-        );
-        const userCalc = calculation.find((_, index) => 
-          game.players[index].userId === userId
-        );
-        
-        if (userCalc) {
-          totalPointsChange += userCalc.rankPoints;
-        }
-      } catch (error) {
-        // 如果历史对局数据不符合当前配置，跳过这局
-        console.warn(`跳过不符合当前配置的历史对局 ${game.id}:`, error.message);
+  // 按时间排序
+  const sortedUserGames = userGames.sort((a, b) => 
+    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+
+  let currentPoints = getInitialPoints();
+
+  // 逐局计算积分变化（应用新手保护和成就系统）
+  sortedUserGames.forEach((game, gameIndex) => {
+    try {
+      // 获取当前游戏之前的所有游戏（用于成就检测）
+      const previousGames = sortedUserGames.slice(0, gameIndex);
+      
+      // 使用与主系统相同的计算方法
+      const calculations = calculateMahjongPointsWithProtectionForGame(
+        game.players.map(p => p.finalScore),
+        game.players.map(p => p.userId),
+        previousGames
+      );
+      
+      const playerIndex = game.players.findIndex(p => p.userId === userId);
+      if (playerIndex !== -1) {
+        const calc = calculations[playerIndex];
+        currentPoints += calc.rankPoints;
       }
+    } catch (error) {
+      // 如果历史对局数据不符合当前配置，跳过这局
+      console.warn(`跳过不符合当前配置的历史对局 ${game.id}:`, error.message);
     }
   });
 
-  return getInitialPoints() + totalPointsChange;
+  return currentPoints;
 }
 
 // 兼容性函数（为了向后兼容）
@@ -593,14 +601,24 @@ export const gamePlayerDb = {
       game.players.some(player => player.userId === userId)
     );
 
+    // 按时间排序所有游戏，确保正确的历史上下文
+    const sortedGames = [...games].sort((a, b) => 
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
     const result: GamePlayerDetail[] = [];
     
     for (const game of userGames) {
       try {
-        // 使用带新手保护的计算方法
-        const calculations = calculateMahjongPointsWithProtection(
+        // 获取当前游戏在时间序列中的位置
+        const currentGameIndex = sortedGames.findIndex(g => g.id === game.id);
+        const previousGames = sortedGames.slice(0, currentGameIndex);
+
+        // 使用与findByGameId相同的计算方法，传入正确的历史游戏上下文
+        const calculations = calculateMahjongPointsWithProtectionForGame(
           game.players.map(p => p.finalScore),
-          game.players.map(p => p.userId)
+          game.players.map(p => p.userId),
+          previousGames
         );
         
         const playerIndex = game.players.findIndex(p => p.userId === userId);
@@ -608,6 +626,12 @@ export const gamePlayerDb = {
           const player = game.players[playerIndex];
           const calc = calculations[playerIndex];
           const user = users.find(u => u.id === player.userId);
+          
+          // 计算该玩家在这场比赛之前的积分和段位
+          const pointsBefore = calculateUserPointsBeforeGame(player.userId, game.createdAt);
+          const pointsAfter = pointsBefore + calc.rankPoints;
+          const rankBefore = parseRankInfo(pointsBefore).displayName;
+          const rankAfter = parseRankInfo(pointsAfter).displayName;
           
           result.push({
             ...player,
@@ -617,7 +641,13 @@ export const gamePlayerDb = {
             umaPoints: calc.umaPoints,
             rankPointsChange: calc.rankPoints,
             originalRankPointsChange: calc.originalRankPoints,
-            isNewbieProtected: calc.isNewbieProtected
+            isNewbieProtected: calc.isNewbieProtected,
+            pointsBefore,
+            pointsAfter,
+            rankBefore,
+            rankAfter,
+            achievements: calc.achievements,
+            achievementBonusPoints: calc.achievementBonusPoints
           });
         }
       } catch (error) {

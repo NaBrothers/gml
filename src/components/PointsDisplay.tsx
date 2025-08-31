@@ -3,6 +3,7 @@ import React from 'react';
 interface PointsDisplayProps {
   pointsChange: number;
   originalPointsChange?: number;
+  achievementBonusPoints?: number;
   isNewbieProtected?: boolean;
   className?: string;
   showSign?: boolean; // 是否显示正负号
@@ -11,6 +12,7 @@ interface PointsDisplayProps {
 const PointsDisplay: React.FC<PointsDisplayProps> = ({
   pointsChange,
   originalPointsChange,
+  achievementBonusPoints = 0,
   isNewbieProtected = false,
   className = '',
   showSign = true
@@ -22,18 +24,21 @@ const PointsDisplay: React.FC<PointsDisplayProps> = ({
     return 'text-gray-600';
   };
 
-  // 判断是否应用了新手保护：原始积分为负但实际积分为0
+  // 计算原始积分+成就分的总和
+  const originalWithAchievements = (originalPointsChange || 0) + achievementBonusPoints;
+
+  // 判断是否应用了新手保护：原始积分+成就分为负但实际积分为0
   const isProtectionApplied = originalPointsChange !== undefined && 
-                              originalPointsChange < 0 && 
+                              originalWithAchievements < 0 && 
                               pointsChange === 0;
 
   // 如果应用了新手保护
   if (isProtectionApplied) {
     return (
       <span className={`inline-flex items-center space-x-1 ${className}`}>
-        {/* 显示删除线的原始积分 */}
+        {/* 显示删除线的原始积分+成就分 */}
         <span className="text-red-600 line-through text-sm opacity-75">
-          {originalPointsChange}
+          {showSign && originalWithAchievements >= 0 ? '+' : ''}{originalWithAchievements}
         </span>
         {/* 显示保护后的积分（0） */}
         <span className="text-red-600 font-medium">

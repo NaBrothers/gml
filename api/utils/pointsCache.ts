@@ -154,20 +154,7 @@ function calculateGamePointsWithProtection(
     const rawPoints = (player.score - basePoints) / 1000;
     const umaPointsValue = umaPoints[position];
     const originalRankPoints = Math.ceil(rawPoints + umaPointsValue);
-    let rankPoints = originalRankPoints;
-    let isNewbieProtected = false;
     
-    // 新手保护逻辑：检查玩家比赛前的段位
-    const currentPoints = playerCurrentPoints.get(player.playerId) || getInitialPoints();
-    const rankInfo = parseRankInfo(currentPoints);
-    const newbieProtectionMaxRank = getNewbieProtectionMaxRank();
-    
-    // 如果玩家在新手保护范围内且积分为负，则设为0
-    if (rankInfo.rankConfig.rankOrder <= newbieProtectionMaxRank && originalRankPoints < 0) {
-      rankPoints = 0;
-      isNewbieProtected = true;
-    }
-
     // 成就检测
     let achievements: AchievementEarned[] = [];
     let achievementBonusPoints = 0;
@@ -207,12 +194,24 @@ function calculateGamePointsWithProtection(
 
         // 计算成就奖励积分
         achievementBonusPoints = calculateAchievementBonusPoints(achievements);
-        
-        // 将成就奖励加入到最终积分中
-        rankPoints += achievementBonusPoints;
       }
     } catch (error) {
       console.warn(`成就检测失败，玩家 ${player.playerId}:`, error.message);
+    }
+    
+    // 先加上成就奖励积分
+    let rankPoints = originalRankPoints + achievementBonusPoints;
+    let isNewbieProtected = false;
+    
+    // 新手保护逻辑：检查玩家比赛前的段位
+    const currentPoints = playerCurrentPoints.get(player.playerId) || getInitialPoints();
+    const rankInfo = parseRankInfo(currentPoints);
+    const newbieProtectionMaxRank = getNewbieProtectionMaxRank();
+    
+    // 如果玩家在新手保护范围内且加上成就奖励后的积分仍为负，则设为0
+    if (rankInfo.rankConfig.rankOrder <= newbieProtectionMaxRank && rankPoints < 0) {
+      rankPoints = 0;
+      isNewbieProtected = true;
     }
     
     results[player.index] = {
