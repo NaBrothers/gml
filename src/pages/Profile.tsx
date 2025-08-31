@@ -71,6 +71,7 @@ interface UserHistory {
       gameDate: string;
       opponents: string[];
       achievements?: AchievementEarned[]; // 本局获得的成就
+      achievementBonusPoints?: number;    // 成就奖励积分总和
     };
     opponents: string[];
   }>;
