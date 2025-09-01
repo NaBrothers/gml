@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Trophy, Users, GamepadIcon, Crown, Sword, LogIn, User, Settings, LogOut, ChevronDown, History, Menu, X, Shield } from 'lucide-react';
+import { Trophy, Users, GamepadIcon, Crown, Sword, LogIn, User, Settings, LogOut, ChevronDown, History, Menu, X, Shield, Package, Sparkles } from 'lucide-react';
 import Avatar from './Avatar';
 import { UserRole } from '../../shared/types';
 
@@ -102,12 +102,28 @@ const Sidebar: React.FC = () => {
                 </Link>
                 
                 <Link 
-                  to="/match-history" 
-                  className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
-                >
-                  <History className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
-                  <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">记录</span>
-                </Link>
+              to="/match-history" 
+              className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
+            >
+              <History className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
+              <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">记录</span>
+            </Link>
+
+            <Link 
+              to="/collection" 
+              className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
+            >
+              <Package className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
+              <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">收藏</span>
+            </Link>
+
+            <Link 
+              to="/gacha" 
+              className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
+            >
+              <Sparkles className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
+              <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">抽卡</span>
+            </Link>
 
                  {/* 管理菜单 - 仅管理员和超级管理员可见 */}
                 {user && (user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN) && (
@@ -225,14 +241,16 @@ const Sidebar: React.FC = () => {
                 <span className="text-sm font-medium text-center">排行榜</span>
               </Link>
               
-              <Link 
-                to="/match-history" 
-                className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <History className="w-8 h-8 mb-2" />
-                <span className="text-sm font-medium text-center">记录</span>
-              </Link>
+              {isAuthenticated && (
+                <Link 
+                  to="/match-history" 
+                  className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <History className="w-8 h-8 mb-2" />
+                  <span className="text-sm font-medium text-center">记录</span>
+                </Link>
+              )}
               
               {/* 第二行 */}
               {isAuthenticated && (
@@ -246,6 +264,25 @@ const Sidebar: React.FC = () => {
                     <span className="text-sm font-medium text-center">记分</span>
                   </Link>
                   
+                  <Link 
+                    to="/collection" 
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Package className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium text-center">收藏</span>
+                  </Link>
+                  
+                  <Link 
+                    to="/gacha" 
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Sparkles className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium text-center">抽卡</span>
+                  </Link>
+
+                  {/* 第三行 */}
                   <button
                     onClick={handleSettingsClick}
                     className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"

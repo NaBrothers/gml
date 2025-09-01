@@ -15,6 +15,9 @@ import UserManagement from "@/pages/UserManagement";
 import MatchHistory from "@/pages/MatchHistory";
 import Admin from "@/pages/Admin";
 import AdminConfig from "@/pages/AdminConfig";
+import Collection from "@/pages/Collection";
+import Gacha from "@/pages/Gacha";
+import AdminGacha from "@/pages/AdminGacha";
 
 export default function App() {
   const { initializeAuth } = useAuthStore();
@@ -65,9 +68,12 @@ export default function App() {
             {/* 管理相关路由 */}
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/config" element={<AdminConfig />} />
+            <Route path="/admin/gacha" element={<AdminGacha />} />
             <Route path="/users" element={<UserManagement />} />
             <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/match-history" element={<MatchHistory />} />
+            <Route path="/collection" element={<Collection />} />
+            <Route path="/gacha" element={<Gacha />} />
           </Routes>
         </div>
         

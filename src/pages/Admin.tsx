@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Users, Settings, Bell, Shield, ArrowLeft, Database, BarChart3 } from 'lucide-react';
+import { Users, Settings, Bell, Shield, ArrowLeft, Database, BarChart3, Sparkles } from 'lucide-react';
 import { UserRole } from '../../shared/types';
 import HeaderBar from '../components/HeaderBar';
 
@@ -26,19 +26,28 @@ const Admin: React.FC = () => {
     {
       id: 'users',
       title: '用户管理',
-      description: '管理系统用户、权限分配',
+      description: '管理用户账户、权限和个人信息',
       icon: Users,
       path: '/users',
-      color: 'from-blue-500 to-blue-600',
+      color: 'from-green-500 to-green-600',
       available: true
     },
     {
       id: 'config',
-      title: '配置中心',
-      description: '系统配置、参数设置、段位管理',
+      title: '系统配置',
+      description: '管理游戏规则、段位系统和成就配置',
       icon: Settings,
       path: '/admin/config',
-      color: 'from-green-500 to-green-600',
+      color: 'from-blue-500 to-blue-600',
+      available: true
+    },
+    {
+      id: 'gacha',
+      title: '抽卡管理',
+      description: '管理抽卡系统、道具和卡池配置',
+      icon: Sparkles,
+      path: '/admin/gacha',
+      color: 'from-pink-500 to-pink-600',
       available: true
     },
     {

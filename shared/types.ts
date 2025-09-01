@@ -320,3 +320,172 @@ export interface FunctionGeneratorConfig {
   previewPoints: CurvePoint[];
   isGenerating: boolean;
 }
+
+// ==================== 抽卡系统类型定义 ====================
+
+// 道具稀有度枚举
+export enum ItemRarity {
+  R = 'R',
+  SR = 'SR',
+  SSR = 'SSR'
+}
+
+// 道具类型枚举
+export enum ItemType {
+  AVATAR_FRAME = 'avatar_frame',    // 头像框
+  HOME_ILLUSTRATION = 'home_illustration', // 主页立绘
+  PROFILE_BANNER = 'profile_banner', // 个人页banner背景图
+  THEME = 'theme',                   // 主题
+  DECORATION = 'decoration'          // 其他装饰
+}
+
+// 道具基础信息
+export interface Item {
+  id: string;
+  name: string;
+  description: string;
+  type: ItemType;
+  rarity: ItemRarity;
+  imageUrl: string;
+  thumbnailUrl?: string;
+  isActive: boolean;        // 是否启用
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 用户道具拥有记录
+export interface UserItem {
+  id: string;
+  userId: string;
+  itemId: string;
+  obtainedAt: string;
+  isEquipped: boolean;      // 是否已装备
+  item?: Item;              // 关联的道具信息
+}
+
+// 卡池配置
+export interface GachaPool {
+  id: string;
+  name: string;
+  description: string;
+  isActive: boolean;        // 是否开启
+  startTime?: string;       // 开始时间
+  endTime?: string;         // 结束时间
+  bannerImageUrl?: string;  // 卡池横幅图片
+  items: GachaPoolItem[];   // 卡池中的道具
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 卡池道具配置
+export interface GachaPoolItem {
+  itemId: string;
+  weight: number;           // 权重（用于概率计算）
+  item?: Item;              // 关联的道具信息
+}
+
+// 抽卡记录
+export interface GachaRecord {
+  id: string;
+  userId: string;
+  poolId: string;
+  itemId: string;
+  rarity: ItemRarity;
+  isGuaranteed: boolean;    // 是否为保底
+  gachaType: 'single' | 'ten'; // 单抽或十连
+  batchId?: string;         // 十连抽的批次ID
+  createdAt: string;
+  user?: User;
+  pool?: GachaPool;
+  item?: Item;
+}
+
+// 用户抽卡次数
+export interface UserGachaTickets {
+  userId: string;
+  tickets: number;          // 剩余抽卡次数
+  totalEarned: number;      // 总获得次数
+  totalUsed: number;        // 总使用次数
+  lastUpdated: string;
+}
+
+// 抽卡次数获得记录
+export interface GachaTicketRecord {
+  id: string;
+  userId: string;
+  type: 'earn' | 'use';      // 记录类型：获得或使用
+  amount: number;           // 获得数量
+  source: 'game_reward' | 'admin_grant' | 'event'; // 来源
+  sourceId?: string;        // 来源ID（如游戏ID）
+  reason?: string;          // 原因/描述
+  adminId?: string;         // 管理员ID（如果是管理员发放）
+  description: string;      // 描述
+  createdAt: string;
+}
+
+// 抽卡结果
+export interface GachaResult {
+  items: {
+    item: Item;
+    isNew: boolean;         // 是否为新获得
+    isGuaranteed: boolean;  // 是否为保底
+  }[];
+  ticketsUsed: number;      // 消耗的抽卡次数
+  remainingTickets: number; // 剩余抽卡次数
+}
+
+// 抽卡配置
+export interface GachaConfig {
+  // 基础概率配置（百分比）
+  rarityRates: {
+    [ItemRarity.R]: number;
+    [ItemRarity.SR]: number;
+    [ItemRarity.SSR]: number;
+  };
+  
+  // 保底配置
+  guaranteeConfig: {
+    tenPullGuaranteeSR: boolean;    // 十连保底SR
+    pitySystemEnabled: boolean;     // 是否启用怜悯值系统
+    srPityCount: number;           // SR保底抽数
+    ssrPityCount: number;          // SSR保底抽数
+  };
+  
+  // 游戏奖励配置
+  gameRewardConfig: {
+    enabled: boolean;
+    rewardsByPosition: {
+      1: number;  // 第一名奖励次数
+      2: number;  // 第二名奖励次数
+      3: number;  // 第三名奖励次数
+      4: number;  // 第四名奖励次数
+    };
+  };
+  
+  // 其他配置
+  maxTicketsPerUser: number;        // 用户最大持有抽卡次数
+  duplicateItemHandling: 'ignore' | 'convert'; // 重复道具处理方式
+}
+
+// 用户装备配置
+export interface UserEquipment {
+  userId: string;
+  avatarFrameId?: string;     // 装备的头像框ID
+  homeIllustrationId?: string; // 装备的主页立绘ID
+  profileBannerId?: string;   // 装备的个人页banner ID
+  themeId?: string;          // 装备的主题ID
+  updatedAt: string;
+}
+
+// 抽卡统计信息
+export interface GachaStats {
+  totalPulls: number;
+  totalTicketsUsed: number;
+  itemsByRarity: {
+    [ItemRarity.R]: number;
+    [ItemRarity.SR]: number;
+    [ItemRarity.SSR]: number;
+  };
+  uniqueItemsObtained: number;
+  totalItemsObtained: number;
+}

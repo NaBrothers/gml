@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Menu, X, Crown, GamepadIcon, Trophy, History, Sword, Settings, Shield, User, LogOut } from 'lucide-react';
+import { ArrowLeft, Menu, X, Crown, GamepadIcon, Trophy, History, Sword, Settings, Shield, User, LogOut, Package, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { UserRole } from '../../shared/types';
 import Avatar from './Avatar';
@@ -161,6 +161,25 @@ const HeaderBar: React.FC<HeaderBarProps> = ({
                     <span className="text-sm font-medium text-center">记分</span>
                   </Link>
                   
+                  <Link 
+                    to="/collection" 
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Package className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium text-center">收藏</span>
+                  </Link>
+                  
+                  <Link 
+                    to="/gacha" 
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Sparkles className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium text-center">抽卡</span>
+                  </Link>
+
+                  {/* 第三行 */}
                   <button
                     onClick={handleSettingsClick}
                     className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"

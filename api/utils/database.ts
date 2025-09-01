@@ -27,6 +27,8 @@ import {
 import { setPointsCacheInvalidator } from './configManager.js';
 import { detectAllAchievements, calculateAchievementBonusPoints } from './achievementEngine.js';
 import { getAchievementsConfig } from './configManager.js';
+import { userTicketDb, ticketRecordDb } from './gachaDatabase.js';
+import { getGachaConfig } from './gachaConfigManager.js';
 
 // 内存缓存（提高性能）
 let users: User[] = [];
@@ -448,7 +450,48 @@ export const gameDb = {
     // 新增对局后，清空积分缓存
     invalidateCache();
     
+    // 发放抽卡次数奖励
+    await this.distributeGachaTickets(game);
+    
     return game;
+  },
+
+  // 发放抽卡次数奖励
+  async distributeGachaTickets(game: GameRecord): Promise<void> {
+    try {
+      const gachaConfig = getGachaConfig();
+      
+      // 检查是否启用游戏奖励
+      if (!gachaConfig.gameRewardConfig.enabled) {
+        return;
+      }
+
+      // 为每个玩家发放抽卡次数
+      for (const player of game.players) {
+        const position = player.position as 1 | 2 | 3 | 4;
+        const rewardAmount = gachaConfig.gameRewardConfig.rewardsByPosition[position];
+        
+        if (rewardAmount > 0) {
+          // 添加抽卡次数
+          await userTicketDb.addTickets(player.userId, rewardAmount);
+          
+          // 记录发放历史
+          await ticketRecordDb.create({
+            userId: player.userId,
+            type: 'earn',
+            amount: rewardAmount,
+            source: 'game_reward',
+            sourceId: game.id,
+            description: `游戏奖励 - 第${position}名`
+          });
+        }
+      }
+      
+      console.log(`游戏 ${game.id} 抽卡次数发放完成`);
+    } catch (error) {
+      console.error('发放抽卡次数失败:', error);
+      // 不抛出错误，避免影响游戏创建
+    }
   },
 
   async findAll(): Promise<GameRecord[]> {

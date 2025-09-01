@@ -218,19 +218,41 @@ export const authenticateToken = (req: Request, res: Response, next: any) => {
     return res.status(401).json({
       success: false,
       error: '访问令牌缺失'
-    });
+    } as ApiResponse);
   }
 
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) {
-      return res.status(403).json({
-        success: false,
-        error: 'Token无效或已过期'
-      });
-    }
-    (req as any).user = user;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    (req as any).user = decoded;
     next();
-  });
+  } catch (error) {
+    return res.status(403).json({
+      success: false,
+      error: '无效的访问令牌'
+    } as ApiResponse);
+  }
+};
+
+// 中间件：验证管理员权限
+export const requireAdmin = (req: any, res: Response, next: any) => {
+  if (!req.user || (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.SUPER_ADMIN)) {
+    return res.status(403).json({
+      success: false,
+      error: '需要管理员权限'
+    } as ApiResponse);
+  }
+  next();
+};
+
+// 中间件：验证超级管理员权限
+export const requireSuperAdmin = (req: any, res: Response, next: any) => {
+  if (!req.user || req.user.role !== UserRole.SUPER_ADMIN) {
+    return res.status(403).json({
+      success: false,
+      error: '需要超级管理员权限'
+    } as ApiResponse);
+  }
+  next();
 };
 
 export default router;

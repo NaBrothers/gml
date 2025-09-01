@@ -12,6 +12,9 @@ import usersRoutes from './routes/users.js';
 import gamesRoutes from './routes/games.js';
 import rankingRoutes from './routes/ranking.js';
 import configRoutes from './routes/config.js';
+import itemsRoutes from './routes/items.js';
+import gachaRoutes from './routes/gacha.js';
+import gachaConfigRoutes from './routes/gachaConfig.js';
 
 // for esm mode
 const __filename = fileURLToPath(import.meta.url);
@@ -38,6 +41,9 @@ app.use('/api/users', usersRoutes);
 app.use('/api/games', gamesRoutes);
 app.use('/api/ranking', rankingRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/items', itemsRoutes);
+app.use('/api/gacha', gachaRoutes);
+app.use('/api/gacha-config', gachaConfigRoutes);
 
 /**
  * health
