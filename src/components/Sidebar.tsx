@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Trophy, Users, GamepadIcon, Crown, Sword, LogIn, User, Settings, LogOut, ChevronDown, History, Menu, X, Shield, Package, Sparkles } from 'lucide-react';
+import { Trophy, Users, GamepadIcon, Crown, Sword, LogIn, User, Settings, LogOut, ChevronDown, History, Menu, X, Shield, Package, Sparkles, BookOpen } from 'lucide-react';
 import Avatar from './Avatar';
 import { UserRole } from '../../shared/types';
 
@@ -123,6 +123,14 @@ const Sidebar: React.FC = () => {
             >
               <Sparkles className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
               <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">抽卡</span>
+            </Link>
+
+            <Link 
+              to="/yaku-guide" 
+              className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
+            >
+              <BookOpen className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
+              <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">役种</span>
             </Link>
 
                  {/* 管理菜单 - 仅管理员和超级管理员可见 */}
@@ -283,6 +291,14 @@ const Sidebar: React.FC = () => {
                   </Link>
 
                   {/* 第三行 */}
+                  <Link 
+                    to="/yaku-guide" 
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <BookOpen className="w-8 h-8 mb-2" />
+                    <span className="text-sm font-medium text-center">役种</span>
+                  </Link>
                   <button
                     onClick={handleSettingsClick}
                     className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"

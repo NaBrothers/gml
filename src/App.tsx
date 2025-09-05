@@ -18,6 +18,7 @@ import AdminConfig from "@/pages/AdminConfig";
 import Collection from "@/pages/Collection";
 import Gacha from "@/pages/Gacha";
 import AdminGacha from "@/pages/AdminGacha";
+import YakuGuide from "@/pages/YakuGuide";
 
 export default function App() {
   const { initializeAuth } = useAuthStore();
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="/ranking" element={<Ranking />} />
             <Route path="/scoring" element={<Scoring />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/yaku-guide" element={<YakuGuide />} />
             {/* 管理相关路由 */}
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/config" element={<AdminConfig />} />
