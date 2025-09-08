@@ -67,13 +67,13 @@ const YakuGuideTab: React.FC = () => {
   function getExampleHand(yaku: Yaku) {
     const basicExample = {
       tiles: [
-        { type: 'man', value: 1 }, { type: 'man', value: 2 }, { type: 'man', value: 3 },
-        { type: 'pin', value: 4 }, { type: 'pin', value: 5 }, { type: 'pin', value: 6 },
-        { type: 'sou', value: 7 }, { type: 'sou', value: 8 }, { type: 'sou', value: 9 },
-        { type: 'honor', value: '东' }, { type: 'honor', value: '东' }, { type: 'honor', value: '东' },
-        { type: 'man', value: 5 }
+        { type: 'man' as const, value: 1 }, { type: 'man' as const, value: 2 }, { type: 'man' as const, value: 3 },
+        { type: 'pin' as const, value: 4 }, { type: 'pin' as const, value: 5 }, { type: 'pin' as const, value: 6 },
+        { type: 'sou' as const, value: 7 }, { type: 'sou' as const, value: 8 }, { type: 'sou' as const, value: 9 },
+        { type: 'honor' as const, value: '东' }, { type: 'honor' as const, value: '东' }, { type: 'honor' as const, value: '东' },
+        { type: 'man' as const, value: 5 }
       ],
-      winningTile: { type: 'man', value: 6 }
+      winningTile: { type: 'man' as const, value: 6 }
     };
     return basicExample;
   }
