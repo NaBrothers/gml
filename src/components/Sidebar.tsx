@@ -126,11 +126,11 @@ const Sidebar: React.FC = () => {
             </Link>
 
             <Link 
-              to="/yaku-guide" 
+              to="/pai-li" 
               className="group flex flex-col items-center p-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105"
             >
               <BookOpen className="w-6 h-6 text-white group-hover:text-yellow-300 transition-colors" />
-              <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">役种</span>
+              <span className="text-xs text-white/80 group-hover:text-white mt-1 font-medium">牌理</span>
             </Link>
 
                  {/* 管理菜单 - 仅管理员和超级管理员可见 */}
@@ -292,12 +292,12 @@ const Sidebar: React.FC = () => {
 
                   {/* 第三行 */}
                   <Link 
-                    to="/yaku-guide" 
+                    to="/pai-li" 
                     className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 aspect-square"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <BookOpen className="w-8 h-8 mb-2" />
-                    <span className="text-sm font-medium text-center">役种</span>
+                    <span className="text-sm font-medium text-center">牌理</span>
                   </Link>
                   <button
                     onClick={handleSettingsClick}
