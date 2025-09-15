@@ -288,18 +288,6 @@ const UserManagement: React.FC = () => {
       <HeaderBar title="用户管理" onBackClick={handleBackClick} />
 
       <div className="container mx-auto px-4 py-6 max-w-6xl">
-        {/* 页面标题卡片 */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 mb-8 border border-white/20 shadow-lg">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center">
-              <Users className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-1">用户管理</h2>
-              <p className="text-gray-600">管理系统用户和权限设置</p>
-            </div>
-          </div>
-        </div>
 
         {/* 桌面端表格布局 */}
         <div className="hidden md:block bg-white/80 backdrop-blur-sm rounded-3xl border border-white/20 shadow-lg overflow-hidden">

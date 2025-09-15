@@ -365,6 +365,7 @@ const MatchHistory: React.FC = () => {
                                       <PointsDisplay 
                                         pointsChange={player.rankPointsChange}
                                         originalPointsChange={player.originalRankPointsChange}
+                                        achievementBonusPoints={player.achievementBonusPoints || 0}
                                         showSign={true}
                                       />
                                     </div>
@@ -454,6 +455,7 @@ const MatchHistory: React.FC = () => {
                                     <PointsDisplay 
                                       pointsChange={player.rankPointsChange}
                                       originalPointsChange={player.originalRankPointsChange}
+                                      achievementBonusPoints={player.achievementBonusPoints || 0}
                                       showSign={true}
                                     />
                                   </span>

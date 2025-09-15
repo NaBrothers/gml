@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { ConfigManager } from '../utils/configManager.js';
 import { ApiResponse, UserRole } from '../../shared/types.js';
 import { authenticateToken } from './auth.js';
+import { updateAchievementConfig } from '../utils/achievementEngine.js';
 
 const router = express.Router();
 
@@ -156,6 +157,12 @@ router.put('/:type', authenticateToken, requireSuperAdmin, async (req: Request, 
 
     // 更新配置
     await ConfigManager.updateConfig(type as 'game' | 'ranks' | 'achievements', config);
+
+    // 如果是成就配置更新，需要更新成就引擎的缓存
+    if (type === 'achievements') {
+      updateAchievementConfig();
+      console.log('🏆 成就配置更新后，已刷新成就引擎缓存');
+    }
 
     // 记录配置变更历史
     configChangeHistory.push({

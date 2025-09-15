@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { userDb, gamePlayerDb, pointHistoryDb, gameDb, calculateUserStats, calculateUserPointHistory } from '../utils/database.js';
+import { userTicketDb, ticketRecordDb } from '../utils/gachaDatabase.js';
 import { ApiResponse, UserWithStats, PointHistory, GamePlayerDetail, GameRecord, UserRole } from '../../shared/types.js';
 import { uploadAvatar, saveAvatarFile, deleteAvatarFile } from '../middleware/upload.js';
 import { authenticateToken } from './auth.js';
@@ -438,6 +439,80 @@ router.get('/:id/permissions', async (req: Request, res: Response) => {
     const response: ApiResponse = {
       success: false,
       error: '获取用户权限失败'
+    };
+    res.status(500).json(response);
+  }
+});
+
+// 发放抽卡次数 (仅超级管理员)
+router.post('/grant-tickets', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { userId, amount, reason } = req.body;
+    const adminUser = (req as any).user;
+
+    // 检查权限
+    if (!adminUser || adminUser.role !== UserRole.SUPER_ADMIN) {
+      const response: ApiResponse = {
+        success: false,
+        error: '权限不足'
+      };
+      return res.status(403).json(response);
+    }
+
+    // 验证参数
+    if (!userId || typeof userId !== 'string') {
+      const response: ApiResponse = {
+        success: false,
+        error: '用户ID不能为空'
+      };
+      return res.status(400).json(response);
+    }
+
+    if (!amount || typeof amount !== 'number' || amount <= 0) {
+      const response: ApiResponse = {
+        success: false,
+        error: '发放数量必须大于0'
+      };
+      return res.status(400).json(response);
+    }
+
+    // 检查目标用户是否存在
+    const targetUser = await userDb.findById(userId);
+    if (!targetUser) {
+      const response: ApiResponse = {
+        success: false,
+        error: '目标用户不存在'
+      };
+      return res.status(404).json(response);
+    }
+
+    // 发放抽卡次数
+    const updatedTickets = await userTicketDb.addTickets(userId, amount);
+
+    // 记录发放日志
+    await ticketRecordDb.create({
+      userId,
+      type: 'earn',
+      amount,
+      source: 'admin_grant',
+      reason: reason || '管理员发放',
+      adminId: adminUser.id,
+      description: reason || '管理员发放'
+    });
+
+    const response: ApiResponse<{ tickets: number, totalEarned: number }> = {
+      success: true,
+      data: {
+        tickets: updatedTickets.tickets,
+        totalEarned: updatedTickets.totalEarned
+      }
+    };
+    res.json(response);
+  } catch (error) {
+    console.error('发放抽卡次数失败:', error);
+    const response: ApiResponse = {
+      success: false,
+      error: '发放抽卡次数失败'
     };
     res.status(500).json(response);
   }

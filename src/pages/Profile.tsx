@@ -71,6 +71,7 @@ interface UserHistory {
       gameDate: string;
       opponents: string[];
       achievements?: AchievementEarned[]; // 本局获得的成就
+      achievementBonusPoints?: number;    // 成就奖励积分总和
     };
     opponents: string[];
   }>;
@@ -449,8 +450,9 @@ const Profile: React.FC = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-600">积分变化:</span>
                           <PointsDisplay 
-                            pointsChange={history.pointHistory?.originalPointsChange || history.gamePlayer.originalRankPointsChange || 0}
+                            pointsChange={history.gamePlayer.rankPointsChange}
                             originalPointsChange={history.gamePlayer.originalRankPointsChange}
+                            achievementBonusPoints={history.pointHistory?.achievementBonusPoints || 0}
                             showSign={true}
                           />
                         </div>
@@ -503,8 +505,9 @@ const Profile: React.FC = () => {
                         </div>
                         <div className="flex items-center space-x-4">
                           <PointsDisplay 
-                            pointsChange={history.pointHistory?.originalPointsChange || history.gamePlayer.originalRankPointsChange || 0}
+                            pointsChange={history.gamePlayer.rankPointsChange}
                             originalPointsChange={history.gamePlayer.originalRankPointsChange}
+                            achievementBonusPoints={history.pointHistory?.achievementBonusPoints || 0}
                             showSign={true}
                           />
                           <div className="flex items-center space-x-1 text-gray-500">
