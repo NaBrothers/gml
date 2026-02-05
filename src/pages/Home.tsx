@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useUserStore } from '../stores/userStore';
-import { Trophy, LogIn, Star, Zap, X } from 'lucide-react';
+import { Trophy, Star, Zap, X } from 'lucide-react';
 
 // 段位配置数据（与后端保持一致）
 import { getRankNameByLevel } from '../utils/rankConfigs';
@@ -76,7 +76,7 @@ const Home: React.FC = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 via-purple-600/30 to-blue-600/40" />
       
       {/* 优化的动态装饰元素 */}
-      <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-10 left-10 w-16 h-16 bg-yellow-400 rounded-full breathing-light" />
         <div className="absolute top-32 right-20 w-12 h-12 bg-pink-400 rounded-full breathing-light-fast" style={{animationDelay: '1s'}} />
         <div className="absolute bottom-20 left-1/4 w-20 h-20 bg-purple-400 rounded-full breathing-light-slow" style={{animationDelay: '2s'}} />
@@ -86,6 +86,41 @@ const Home: React.FC = () => {
         {/* 新增的渐变呼吸光晕 */}
         <div className="absolute top-1/4 right-1/4 w-24 h-24 gradient-breathing" style={{animationDelay: '1.5s'}} />
         <div className="absolute bottom-1/3 left-1/3 w-18 h-18 gradient-breathing" style={{animationDelay: '4s'}} />
+
+        {/* 浮动麻将牌装饰 */}
+        {[
+          { char: '🀄', left: '10%', top: '20%', delay: '0s', duration: '6s', size: '3rem' },
+          { char: '🀅', left: '85%', top: '15%', delay: '2s', duration: '7s', size: '3.5rem' },
+          { char: '🀆', left: '75%', top: '65%', delay: '1s', duration: '8s', size: '3rem' },
+          { char: '🀇', left: '15%', top: '70%', delay: '3s', duration: '6.5s', size: '2.5rem' },
+          { char: '🀐', left: '5%', top: '45%', delay: '4s', duration: '7.5s', size: '2rem' },
+          { char: '🀙', left: '90%', top: '50%', delay: '1.5s', duration: '6.8s', size: '3rem' },
+        ].map((tile, i) => (
+          <div
+            key={i}
+            className="absolute text-white/10 pointer-events-none select-none font-serif float-animation"
+            style={{
+              left: tile.left,
+              top: tile.top,
+              fontSize: tile.size,
+              animationDuration: tile.duration,
+              animationDelay: tile.delay,
+              textShadow: '0 0 15px rgba(255,255,255,0.2)',
+              transform: `rotate(${Math.random() * 30 - 15}deg)`
+            }}
+          >
+            {tile.char}
+          </div>
+        ))}
+        
+        {/* 背景网格纹理 */}
+        <div 
+          className="absolute inset-0 opacity-[0.03]" 
+          style={{ 
+            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.5) 1px, transparent 1px)`,
+            backgroundSize: '50px 50px'
+          }}
+        />
       </div>
 
       {/* 主要内容 */}
@@ -93,29 +128,44 @@ const Home: React.FC = () => {
         {/* 左侧内容区域 */}
         <div className="flex-1 flex flex-col justify-center items-start relative z-10 max-w-2xl mx-auto md:mx-0 md:ml-8 lg:ml-16">
           {/* 中央欢迎区域 */}
-          <div className="text-left mb-12 px-4 md:px-8 w-full">
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 drop-shadow-2xl">
-              <span className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 bg-clip-text text-transparent">极客雀魂</span>
+          <div className="text-left mb-12 px-4 md:px-8 w-full relative">
+             {/* 装饰性背景光晕 */}
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-yellow-300/10 rounded-full blur-3xl animate-pulse-orange" />
+            
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-2 drop-shadow-2xl relative inline-block">
+              <span className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 bg-clip-text text-transparent relative z-10">极客雀魂</span>
+              <span className="absolute -top-6 -right-8 text-3xl animate-bounce">✨</span>
+              <div className="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent opacity-70"></div>
             </h1>
             
-            <p className="text-white/90 text-lg md:text-xl mb-8 drop-shadow-lg max-w-lg">
-              体验最纯粹的麻将竞技
+            <div className="text-yellow-200/60 text-sm tracking-[0.5em] mb-6 font-light uppercase">
+              Geek Mahjong Soul
+            </div>
+            
+            <p className="text-white/90 text-lg md:text-xl mb-8 drop-shadow-lg max-w-lg leading-relaxed border-l-4 border-yellow-400/50 pl-4 bg-black/10 backdrop-blur-sm py-2 rounded-r-lg">
+              体验最纯粹的麻将竞技<br/>
+              <span className="text-sm text-white/70">让智慧与运气在指尖碰撞</span>
             </p>
             
             {!isAuthenticated && (
-              <div className="flex flex-col sm:flex-row gap-4 md:gap-6 w-2/3">
-                <Link
-                  to="/login"
-                  className="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white font-bold text-lg rounded-full hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all duration-300 shadow-2xl hover:shadow-pink-500/30 transform hover:scale-105"
-                >
-                  <Zap className="w-6 h-6 mr-3 group-hover:animate-pulse" />
-                  登录
-                </Link>
+              <div className="flex flex-col sm:flex-row gap-4 md:gap-6 w-2/3 relative z-20">
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 to-blue-600 rounded-full blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                  <Link
+                    to="/login"
+                    className="relative inline-flex items-center px-8 py-4 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 text-white font-bold text-lg rounded-full hover:from-pink-600 hover:via-purple-600 hover:to-blue-600 transition-all duration-300 shadow-2xl ring-1 ring-white/20 transform hover:scale-105"
+                  >
+                    <Zap className="w-6 h-6 mr-3 group-hover:animate-pulse" />
+                    登录
+                  </Link>
+                </div>
+                
                 <Link
                   to="/ranking"
-                  className="group inline-flex items-center px-8 py-4 bg-white/10 backdrop-blur-md text-white font-bold text-lg rounded-full border-2 border-white/30 hover:bg-white/20 hover:border-white/50 transition-all duration-300 shadow-xl transform hover:scale-105"
+                  className="group inline-flex items-center px-8 py-4 bg-white/5 backdrop-blur-md text-white font-bold text-lg rounded-full border border-white/20 hover:bg-white/10 hover:border-yellow-300/50 transition-all duration-300 shadow-xl transform hover:scale-105 relative overflow-hidden"
                 >
-                  <Star className="w-6 h-6 mr-3 group-hover:animate-spin" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out"></div>
+                  <Star className="w-6 h-6 mr-3 text-yellow-300 group-hover:rotate-180 transition-transform duration-500" />
                   查看排行
                 </Link>
               </div>
