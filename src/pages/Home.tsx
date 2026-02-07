@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useUserStore } from '../stores/userStore';
 import { Trophy, Star, Zap, X } from 'lucide-react';
 
-// 段位配置数据（与后端保持一致）
+// 段位配置数据（与后端保持一致1111）
 import { getRankNameByLevel } from '../utils/rankConfigs';
 import QuoteBubble from '../components/QuoteBubble';
 import SakuraRain from '../components/SakuraRain';
