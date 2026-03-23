@@ -24,7 +24,7 @@ interface GachaState {
   error: string | null;
   showResult: boolean;
   lastResult: GachaResult | null;
-  lastGachaType: 'single' | 'ten' | null; // 记录最后一次抽卡类型
+  lastGachaType: 'single' | 'ten' | null; // 记录最后一次抽卡类型123123
   recentRecords: GachaRecord[];
   // 动画相关状态
   showAnimation: boolean;

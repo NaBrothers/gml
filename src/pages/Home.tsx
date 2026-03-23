@@ -19,7 +19,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     fetchRankings(10); // 获取前10名
     
-    // 检测是否为移动设备321321
+    // 检测是否为移动设备
     const checkMobile = () => {
       const isMobileDevice = window.innerWidth < 1024;
       setIsMobile(isMobileDevice);
