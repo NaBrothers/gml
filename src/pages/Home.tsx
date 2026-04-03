@@ -12,7 +12,7 @@ import MouseTrail from '../components/MouseTrail';
 import FloatingMahjong from '../components/FloatingMahjong';
 
 const Home: React.FC = () => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { rankings, fetchRankings } = useUserStore();
   const [isMobileRankingOpen, setIsMobileRankingOpen] = useState(false);
   const [showQuote, setShowQuote] = useState(false);
@@ -148,7 +148,7 @@ const Home: React.FC = () => {
               </div>
             ) : (
               <Link
-                to="/profile"
+                to={`/profile/${user?.id}`}
                 className="group inline-flex items-center px-8 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold text-lg rounded-2xl hover:bg-white/20 transition-all duration-300 mb-8"
               >
                 回到个人主页
